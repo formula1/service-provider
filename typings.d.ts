@@ -3,10 +3,10 @@ import { IServiceHandle } from "./src/Service/Handle";
 import { IServiceInstanceFactory, IServiceInstanceInfo } from "./src/Service/Instance";
 
 export declare class ArchitectureConfiguration {
-  public static compileFolder(folder: string): {
+  public static compileFolder(folder: string): Promise<{
     availableServices: Map<string, IServiceConfig>,
     networkConfiguration: INetworkConfig,
-  };
+  }>;
   constructor();
   public finalize(): {
     availableServices: Map<string, IServiceConfig>,
