@@ -9,7 +9,7 @@ const ContainerFactory = {
         const container = require(config.file);
         return container.construct(config).then(function () {
             available.set(config.name, container);
-            return { name: config.name };
+            return { args: [], config: config, name: config.name };
         });
     },
     ensureExists(info) {
@@ -44,6 +44,7 @@ class ContainerHandle {
         return new websocket_1.w3cwebsocket(`http://127.0.0.1/${this.name}`);
     }
     ;
+    destroy() { return Promise.resolve(); }
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = ContainerFactory;

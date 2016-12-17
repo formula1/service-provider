@@ -1,4 +1,5 @@
-import { w3cwebsocket as WebSocket } from "websocket";
+import { w3cwebsocket } from "websocket";
+import { IContainer } from "../../abstract";
 
 import { IAbstractServiceConfig, IDependentServiceConfig } from "../../Service/Config";
 import { IServiceHandle } from "../../Service/Handle";
@@ -20,22 +21,22 @@ interface IContainerInstance {
 }
 
 const ContainerFactory = <
-  IServiceInstanceFactory<IContainerInstanceInfo, ContainerHandle>
+  IServiceInstanceFactory<IContainer>
 > {
-  constructInstance(config: IAbstractServiceConfig & IDependentServiceConfig) {
+  constructInstance(config: IAbstractServiceConfig & IDependentServiceConfig): Promise<IContainerInstanceInfo> {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two maps of the same name"));
     }
     const container = <IContainerInstance> require(config.file);
     return container.construct(config).then(function(){
       available.set(config.name, container);
-      return { name: config.name };
+      return { args: [], config: config, name: config.name };
     });
   },
-  ensureExists(info) {
+  ensureExists(info: IContainerInstanceInfo) {
     return Promise.resolve(available.has(info.name));
   },
-  destructInstance(info) {
+  destructInstance(info: IContainerInstanceInfo) {
     return Promise.resolve().then(function(){
       const boo = available.has(info.name);
       if (!boo) {
@@ -48,7 +49,7 @@ const ContainerFactory = <
       });
     });
   },
-  constructHandle(info) {
+  constructHandle(info: IContainerInstanceInfo) {
     if (!available.has(info.name)) {
       return Promise.reject(`${info.name} is not an available kvstore`);
     }
@@ -57,14 +58,15 @@ const ContainerFactory = <
   },
 };
 
-class ContainerHandle implements IServiceHandle {
+class ContainerHandle implements IContainer {
   public name;
   constructor(info: IContainerInstanceInfo, ) {
     this.name = info.name;
   }
   public createConnection(): WebSocket {
-    return new WebSocket(`http://127.0.0.1/${this.name}`);
+    return <WebSocket> new w3cwebsocket(`http://127.0.0.1/${this.name}`);
   };
+  destroy() { return Promise.resolve(); }
 }
 
 export default ContainerFactory;

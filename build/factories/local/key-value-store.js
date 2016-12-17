@@ -6,7 +6,7 @@ const KeyValueStoreFactory = {
             return Promise.reject(new Error("Cannot create two maps of the same name"));
         }
         available.set(config.name, new Map());
-        return Promise.resolve({ name: config.name });
+        return Promise.resolve({ config: config, name: config.name, args: [] });
     },
     ensureExists(info) {
         return Promise.resolve(available.has(info.name));

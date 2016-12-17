@@ -1,3 +1,4 @@
+import { IDispatcher } from "../../abstract";
 import { IAbstractServiceConfig, IDependentServiceConfig } from "../../Service/Config";
 import { IServiceHandle } from "../../Service/Handle";
 import { IServiceInstanceFactory, IServiceInstanceInfo } from "../../Service/Instance";
@@ -9,26 +10,26 @@ interface IDispatcherInstanceInfo extends IServiceInstanceInfo {
 }
 
 const DispatcherFactory = <
-  IServiceInstanceFactory<IDispatcherInstanceInfo, DispatcherHandle<any>>
+  IServiceInstanceFactory<IDispatcher<any>>
 > {
-  constructInstance(config: IAbstractServiceConfig & IDependentServiceConfig) {
+  constructInstance(config: IAbstractServiceConfig & IDependentServiceConfig): Promise<IDispatcherInstanceInfo> {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two dispatchers of the same name"));
     }
     available.set(config.name, new Map());
-    return Promise.resolve({ name: config.name });
+    return Promise.resolve({ config: config, name: config.name, args: [] });
   },
-  ensureExists(info) {
+  ensureExists(info: IDispatcherInstanceInfo) {
     return Promise.resolve(available.has(info.name));
   },
-  destructInstance(info) {
+  destructInstance(info: IDispatcherInstanceInfo) {
     const boo = available.has(info.name);
     if (boo) {
       available.delete(info.name);
     }
     return Promise.resolve(boo);
   },
-  constructHandle(info) {
+  constructHandle(info: IDispatcherInstanceInfo) {
     if (!available.has(info.name)) {
       return Promise.reject(`${info.name} is not an available dispatcher`);
     }
@@ -37,7 +38,7 @@ const DispatcherFactory = <
   },
 };
 
-class DispatcherHandle<Input> implements IServiceHandle {
+class DispatcherHandle<Input> implements IDispatcher<Input> {
   public name;
   constructor(info: IDispatcherInstanceInfo) {
     this.name = info.name;

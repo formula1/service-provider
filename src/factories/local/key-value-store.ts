@@ -1,3 +1,4 @@
+import { IKeyValueStore } from "../../abstract";
 import { IServiceConfig } from "../../Service/Config";
 import { IServiceHandle } from "../../Service/Handle";
 import { IServiceInstanceFactory, IServiceInstanceInfo } from "../../Service/Instance";
@@ -9,26 +10,26 @@ interface IKeyValueInstanceInfo extends IServiceInstanceInfo {
 }
 
 const KeyValueStoreFactory = <
-  IServiceInstanceFactory<IKeyValueInstanceInfo, KeyValueStoreHandle<any, any>>
+  IServiceInstanceFactory<IKeyValueStore<any, any>>
 > {
-  constructInstance(config: IServiceConfig) {
+  constructInstance(config: IServiceConfig): Promise<IKeyValueInstanceInfo> {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two maps of the same name"));
     }
     available.set(config.name, new Map());
-    return Promise.resolve({ name: config.name });
+    return Promise.resolve({ config: config, name: config.name, args: [] });
   },
-  ensureExists(info) {
+  ensureExists(info: IKeyValueInstanceInfo) {
     return Promise.resolve(available.has(info.name));
   },
-  destructInstance(info) {
+  destructInstance(info: IKeyValueInstanceInfo) {
     const boo = available.has(info.name);
     if (boo) {
       available.delete(info.name);
     }
     return Promise.resolve(boo);
   },
-  constructHandle(info) {
+  constructHandle(info: IKeyValueInstanceInfo) {
     if (!available.has(info.name)) {
       return Promise.reject(`${info.name} is not an available kvstore`);
     }
@@ -37,7 +38,7 @@ const KeyValueStoreFactory = <
   },
 };
 
-class KeyValueStoreHandle<Key, Value> implements IServiceHandle {
+class KeyValueStoreHandle<Key, Value> implements IKeyValueStore<Key, Value> {
   public name;
   constructor(info: IKeyValueInstanceInfo) {
     this.name = info.name;

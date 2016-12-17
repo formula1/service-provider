@@ -18,6 +18,9 @@ declare module "websocket" {
     public url: string;
     public readyState: number;
 
+    public any: any;
+    public void: void;
+
     public OPEN: number;
     public CONNECTING: number;
     public CLOSING: number;

@@ -10,11 +10,11 @@ interface IServiceInstanceInfo {
 
 export { IServiceInstanceInfo };
 
-interface IServiceInstanceFactory<ServiceInfo, ServiceHandle> {
-  constructInstance(config: IServiceConfig): Promise<ServiceInfo & IServiceInstanceInfo>;
-  ensureExists(info: ServiceInfo & IServiceInstanceInfo): Promise<boolean>;
-  destructInstance(config: ServiceInfo & IServiceInstanceInfo): Promise<boolean>;
-  constructHandle(config: ServiceInfo & IServiceInstanceInfo): Promise<ServiceHandle & IServiceHandle>;
+interface IServiceInstanceFactory<ServiceHandle> {
+  constructInstance(config: IServiceConfig): Promise<IServiceInstanceInfo>;
+  ensureExists(info: IServiceInstanceInfo): Promise<boolean>;
+  destructInstance(config: IServiceInstanceInfo): Promise<boolean>;
+  constructHandle(config: IServiceInstanceInfo): Promise<ServiceHandle & IServiceHandle>;
 }
 
 interface ILambdaInstance<Input, Output> {

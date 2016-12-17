@@ -3,7 +3,7 @@ import { IServiceInstanceFactory, IServiceInstanceInfo } from "../Service/Instan
 
 function generateHandles(
   handleConfigs: Array<IServiceInstanceInfo>,
-  instanceFactories: Map<string, IServiceInstanceFactory<IServiceInstanceInfo, IServiceHandle>>
+  instanceFactories: Map<string, IServiceInstanceFactory<IServiceHandle>>
 ) {
   return Promise.all(handleConfigs.map(function(handleConfig){
     const serviceconfig = handleConfig.config;

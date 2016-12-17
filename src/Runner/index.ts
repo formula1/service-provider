@@ -3,12 +3,12 @@ import { IServiceHandle, IServiceHandleInit } from "../Service/Handle";
 import { IServiceInstanceFactory, IServiceInstanceInfo } from "../Service/Instance";
 
 class ServiceRunner {
-  private instanceFactories: Map<string, IServiceInstanceFactory<IServiceInstanceInfo, IServiceHandle>>;
+  private instanceFactories: Map<string, IServiceInstanceFactory<IServiceHandle>>;
   private createdServices: Map<string, IServiceHandleInit>;
   private availableServices: Map<string, IServiceConfig>;
   constructor(
     availableServices: Map<string, IServiceConfig>,
-    instanceFactories: Map<string, IServiceInstanceFactory<IServiceInstanceInfo, IServiceHandle>>,
+    instanceFactories: Map<string, IServiceInstanceFactory<IServiceHandle>>,
   ) {
     this.availableServices = availableServices;
     this.instanceFactories = instanceFactories;

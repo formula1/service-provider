@@ -1,4 +1,4 @@
-import { IAbstractServiceConfig, IDependentServiceConfig, IServiceConfig } from "../Service/Config";
+import { IAbstractServiceConfig, IDependentServiceConfig, IServiceConfig, INetworkConfig } from "../Service/Config";
 
 import createNetworkConfig from "./create-network-config";
 
@@ -28,7 +28,10 @@ class ArchitectureConfiguration {
       serviceIsReady: new Map<string, boolean>(),
     };
   }
-  public finalize() {
+  public finalize(): {
+    availableServices: Map<string, IServiceConfig>,
+    networkConfiguration: INetworkConfig,
+  } {
     const context = this.context;
     if (context.pendingWatchers.size > 0) {
       throw new Error(`still waiting on services: [${

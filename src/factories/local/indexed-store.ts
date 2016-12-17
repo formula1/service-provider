@@ -3,6 +3,8 @@ import { Bucket, Mock } from "couchbase";
 const Cluster = Mock.Cluster;
 const ViewQuery = Mock.ViewQuery;
 
+
+import { IIndexedStore } from "../../abstract";
 import { IServiceConfig } from "../../Service/Config";
 import { IServiceHandle } from "../../Service/Handle";
 import { IServiceInstanceFactory, IServiceInstanceInfo } from "../../Service/Instance";
@@ -11,7 +13,7 @@ const db = new Cluster();
 const available = <Map<string, Bucket >> new Map();
 
 interface IIndexStoreConfig extends IServiceConfig {
-  views: Map<string, string>;
+  views: { [key: string]: string };
 }
 
 interface IIndexStoreInstanceInfo extends IServiceInstanceInfo {
@@ -34,7 +36,7 @@ const DEFAULT_VIEWQUERY_CONFIG = {
 };
 
 const IndexStoreFactory = <
-  IServiceInstanceFactory<IIndexStoreInstanceInfo, IndexStoreHandle<any>>
+  IServiceInstanceFactory<IIndexedStore<any>>
 > {
   constructInstance(config: IIndexStoreConfig) {
     if (available.has(config.name)) {
@@ -59,10 +61,10 @@ const IndexStoreFactory = <
       return { name: config.name, views: Object.keys(designconfig) };
     });
   },
-  ensureExists(info) {
+  ensureExists(info: IIndexStoreInstanceInfo) {
     return Promise.resolve(available.has(info.name));
   },
-  destructInstance(info) {
+  destructInstance(info: IIndexStoreInstanceInfo) {
     const boo = available.has(info.name);
     if (boo) {
       const bucket = available.get(info.name);
@@ -71,7 +73,7 @@ const IndexStoreFactory = <
     }
     return Promise.resolve(boo);
   },
-  constructHandle(info) {
+  constructHandle(info: IIndexStoreInstanceInfo) {
     if (!available.has(info.name)) {
       return Promise.reject(`${info.name} is not an available dispatcher`);
     }
@@ -80,7 +82,7 @@ const IndexStoreFactory = <
   },
 };
 
-class IndexStoreHandle<Value> implements IServiceHandle {
+class IndexStoreHandle<Value> implements IIndexedStore<Value> {
   public name;
   private info: IIndexStoreInstanceInfo;
   constructor(info: IIndexStoreInstanceInfo) {

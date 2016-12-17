@@ -1,3 +1,5 @@
+import { ILambda } from "../../abstract";
+
 import { IAbstractServiceConfig, IDependentServiceConfig } from "../../Service/Config";
 import { IServiceHandle } from "../../Service/Handle";
 import { IServiceInstanceFactory, IServiceInstanceInfo } from "../../Service/Instance";
@@ -9,7 +11,7 @@ interface ILambdaInstanceInfo extends IServiceInstanceInfo {
 }
 
 const LambdaFactory = <
-  IServiceInstanceFactory<ILambdaInstanceInfo, LambdaHandle<any, any>>
+  IServiceInstanceFactory<ILambda<any, any>>
 > {
   constructInstance(config: IAbstractServiceConfig & IDependentServiceConfig) {
     if (available.has(config.name)) {
@@ -19,17 +21,17 @@ const LambdaFactory = <
     available.set(config.name, fn);
     return Promise.resolve({ name: config.name });
   },
-  ensureExists(info) {
+  ensureExists(info: ILambdaInstanceInfo) {
     return Promise.resolve(available.has(info.name));
   },
-  destructInstance(info) {
+  destructInstance(info: ILambdaInstanceInfo) {
     const boo = available.has(info.name);
     if (boo) {
       available.delete(info.name);
     }
     return Promise.resolve(boo);
   },
-  constructHandle(info) {
+  constructHandle(info: ILambdaInstanceInfo) {
     if (!available.has(info.name)) {
       return Promise.reject(`${info.name} is not an available kvstore`);
     }
@@ -38,7 +40,7 @@ const LambdaFactory = <
   },
 };
 
-class LambdaHandle<Input, Output> implements IServiceHandle {
+class LambdaHandle<Input, Output> implements ILambda<Input, Output> {
   public name;
   constructor(info: ILambdaInstanceInfo) {
     this.name = info.name;
