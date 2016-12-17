@@ -1,23 +1,31 @@
-import { IDispatcher } from "../../abstract";
-import { IAbstractServiceConfig, IDependentServiceConfig } from "../../Service/Config";
-import { IServiceHandle } from "../../Service/Handle";
-import { IServiceInstanceFactory, IServiceInstanceInfo } from "../../Service/Instance";
+import { IDispatcherHandle, IDispatcherInstance } from "../../abstract";
+import { IServiceConfig, IServiceInstanceInfo, IAbstractServiceConfig, IDependentServiceConfig } from "../../Service/Config";
+import { IServiceInstanceFactory, IServiceHandle } from "../../Service/Usable";
 
-const available = <Map<string, Map<string, Set<Function> > >> new Map();
+const available = <Map<string, DispatcherInstance>> new Map();
 
 interface IDispatcherInstanceInfo extends IServiceInstanceInfo {
   name: string;
 }
 
 const DispatcherFactory = <
-  IServiceInstanceFactory<IDispatcher<any>>
+  IServiceInstanceFactory<IDispatcherHandle<any>>
 > {
   constructInstance(config: IAbstractServiceConfig & IDependentServiceConfig): Promise<IDispatcherInstanceInfo> {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two dispatchers of the same name"));
     }
-    available.set(config.name, new Map());
-    return Promise.resolve({ config: config, name: config.name, args: [] });
+    return this.constructInternal(config).then(function(){
+      return { config: config, name: config.name, args: [] };
+    });
+  },
+  constructInternal(config: IServiceConfig) {
+    if (available.has(config.name)) {
+      return Promise.resolve(available.get(config.name));
+    }
+    const ret = new DispatcherInstance(config);
+    available.set(config.name, ret);
+    return Promise.resolve(ret);
   },
   ensureExists(info: IDispatcherInstanceInfo) {
     return Promise.resolve(available.has(info.name));
@@ -38,16 +46,14 @@ const DispatcherFactory = <
   },
 };
 
-class DispatcherHandle<Input> implements IDispatcher<Input> {
-  public name;
-  constructor(info: IDispatcherInstanceInfo) {
-    this.name = info.name;
+class DispatcherInstance implements IDispatcherInstance<any> {
+  public info;
+  private map: Map<string, Set<Function>>;
+  constructor(config) {
+    this.map = new Map();
   }
-  public dispatch(key: string, input: Input): Promise<number> {
-    if (!available.has(this.name)) {
-      return Promise.reject("This dispatcher does not exist");
-    }
-    const map = available.get(this.name);
+  public dispatch(key: string, input: any): Promise<number> {
+    const map = this.map;
     const set = map.get(key);
     if (!set) {
       return Promise.resolve(0);
@@ -58,10 +64,7 @@ class DispatcherHandle<Input> implements IDispatcher<Input> {
     return Promise.resolve(set.size);
   }
   public subscribe(key: string, fn: Function): Promise<Boolean> {
-    if (!available.has(this.name)) {
-      return Promise.reject("This dispatcher does not exist");
-    }
-    const map = available.get(this.name);
+    const map = this.map;
     if (!map.has(key)) {
       map.set(key, new Set());
     }
@@ -73,10 +76,7 @@ class DispatcherHandle<Input> implements IDispatcher<Input> {
     return Promise.resolve(false);
   }
   public unsubscribe(key: string, fn: Function): Promise<Boolean> {
-    if (!available.has(this.name)) {
-      return Promise.reject("This dispatcher does not exist");
-    }
-    const map = available.get(this.name);
+    const map = this.map;
     let set = map.get(key);
     if (!set) {
       return Promise.resolve(false);
@@ -89,6 +89,35 @@ class DispatcherHandle<Input> implements IDispatcher<Input> {
       map.delete(key);
     }
     return Promise.resolve(true);
+  }
+}
+
+
+class DispatcherHandle<Input> implements IDispatcherHandle<Input> {
+  public name;
+  constructor(info: IDispatcherInstanceInfo) {
+    this.name = info.name;
+  }
+  public dispatch(key: string, input: Input): Promise<number> {
+    if (!available.has(this.name)) {
+      return Promise.reject("This dispatcher does not exist");
+    }
+    const i = available.get(this.name);
+    return i.dispatch(key, input);
+  }
+  public subscribe(key: string, fn: Function): Promise<Boolean> {
+    if (!available.has(this.name)) {
+      return Promise.reject("This dispatcher does not exist");
+    }
+    const i = available.get(this.name);
+    return i.subscribe(key, fn);
+  }
+  public unsubscribe(key: string, fn: Function): Promise<Boolean> {
+    if (!available.has(this.name)) {
+      return Promise.reject("This dispatcher does not exist");
+    }
+    const i = available.get(this.name);
+    return i.unsubscribe(key, fn);
   }
 }
 

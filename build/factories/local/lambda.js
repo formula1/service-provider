@@ -1,13 +1,23 @@
 "use strict";
 const available = new Map();
+const index_1 = require("./index");
 const LambdaFactory = {
     constructInstance(config) {
         if (available.has(config.name)) {
             return Promise.reject(new Error("Cannot create two maps of the same name"));
         }
-        const fn = require(config.file);
-        available.set(config.name, fn);
-        return Promise.resolve({ name: config.name });
+        return this.constructInternal(config).then(function () {
+            return Promise.resolve({ name: config.name });
+        });
+    },
+    constructInternal(config) {
+        if (available.has(config.name)) {
+            return Promise.resolve(available.get(config.name));
+        }
+        return easyGenerate(config, index_1.LocalFactoryMap).then(function (lambda) {
+            available.set(config.name, lambda);
+            return lambda;
+        });
     },
     ensureExists(info) {
         return Promise.resolve(available.has(info.name));
@@ -27,6 +37,24 @@ const LambdaFactory = {
         return Promise.resolve(kvstore);
     },
 };
+class LambdaInstance {
+    constructor(info, serviceHandles, method) {
+        this.info = info;
+        this.services = serviceHandles;
+        this.method = method;
+    }
+    run(input) {
+        return this.method.call(this, input);
+    }
+}
+const util_1 = require("../../abstract/util");
+function easyGenerate(config, factoryMap) {
+    return util_1.generateHandles(config.requireResults, factoryMap).then(function (handles) {
+        const containerMethod = require(config.file);
+        const container = new LambdaInstance(undefined, handles, containerMethod);
+        return container;
+    });
+}
 class LambdaHandle {
     constructor(info) {
         this.name = info.name;
@@ -35,8 +63,8 @@ class LambdaHandle {
         if (!available.has(this.name)) {
             return Promise.reject("This Lambda Does not Exist");
         }
-        let fn = available.get(this.name);
-        return Promise.resolve(fn(input));
+        let lambda = available.get(this.name);
+        return lambda.run(input);
     }
 }
 Object.defineProperty(exports, "__esModule", { value: true });

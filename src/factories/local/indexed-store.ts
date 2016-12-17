@@ -4,13 +4,12 @@ const Cluster = Mock.Cluster;
 const ViewQuery = Mock.ViewQuery;
 
 
-import { IIndexedStore } from "../../abstract";
-import { IServiceConfig } from "../../Service/Config";
-import { IServiceHandle } from "../../Service/Handle";
-import { IServiceInstanceFactory, IServiceInstanceInfo } from "../../Service/Instance";
+import { IIndexedStoreHandle, IIndexedStoreInstance } from "../../abstract";
+import { IServiceInstanceInfo, IServiceConfig } from "../../Service/Config";
+import { IServiceInstanceFactory, IServiceHandle } from "../../Service/Usable";
 
 const db = new Cluster();
-const available = <Map<string, Bucket >> new Map();
+const available = <Map<string, IndexStoreInstance<any>>> new Map();
 
 interface IIndexStoreConfig extends IServiceConfig {
   views: { [key: string]: string };
@@ -36,15 +35,105 @@ const DEFAULT_VIEWQUERY_CONFIG = {
 };
 
 const IndexStoreFactory = <
-  IServiceInstanceFactory<IIndexedStore<any>>
+  IServiceInstanceFactory<IIndexedStoreHandle<any>>
 > {
   constructInstance(config: IIndexStoreConfig) {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two dispatchers of the same name"));
     }
+    this.constructInternal(config).then(function(){
+      return { name: config.name, views: Object.keys(config.views) };
+    });
+  },
+  constructInternal(config: IIndexStoreConfig) {
+    if (available.has(config.name)) {
+      return Promise.resolve(available.get(config.name));
+    }
+    const instance = new IndexStoreInstance(config);
+    instance.registerViews().then(function(){
+      available.set(config.name, instance);
+      return instance;
+    });
+  },
+
+  ensureExists(info: IIndexStoreInstanceInfo) {
+    return Promise.resolve(available.has(info.name));
+  },
+  destructInstance(info: IIndexStoreInstanceInfo) {
+    if (!available.has(info.name)) {
+      return Promise.resolve(false);
+    }
+    const instance = available.get(info.name);
+    available.delete(info.name);
+    instance.destroy().then(function(){
+      return true;
+    });
+  },
+  constructHandle(info: IIndexStoreInstanceInfo) {
+    if (!available.has(info.name)) {
+      return Promise.reject(`${info.name} is not an available dispatcher`);
+    }
+    const kvstore = new IndexStoreHandle(info);
+    return Promise.resolve(kvstore);
+  },
+};
+class IndexStoreHandle<Value> implements IndexStoreHandle<Value> {
+  public name;
+  private info: IIndexStoreInstanceInfo;
+  constructor(info: IIndexStoreInstanceInfo) {
+    this.name = info.name;
+    this.info = info;
+  }
+  public create(value: Value, id?: string): Promise<string> {
+    if (!available.has(this.name)) {
+      return Promise.reject("This store does not exist");
+    }
+    return available.get(this.name).create(value, id);
+  }
+  public get(id: string): Promise<Value> {
+    if (!available.has(this.name)) {
+      return Promise.reject("This store does not exist");
+    }
+    return available.get(this.name).get(id);
+  }
+  public delete(id: string): Promise<Value> {
+    if (!available.has(this.name)) {
+      return Promise.reject("This store does not exist");
+    }
+    return available.get(this.name).delete(id);
+  }
+  public update(id: string, newValues: Object): Promise<Value> {
+    if (!available.has(this.name)) {
+      return Promise.reject("This store does not exist");
+    }
+    return available.get(this.name).update(id, newValues);
+  }
+  public query(view: string, options: IViewQueryConfig<Value> = DEFAULT_VIEWQUERY_CONFIG): Promise<Array<Value>> {
+    if (!available.has(this.name)) {
+      return Promise.reject("This store does not exist");
+    }
+    return available.get(this.name).update(view, options);
+  }
+}
+
+class IndexStoreInstance<Value> implements IIndexedStoreInstance<Value> {
+  public name;
+  public info: IIndexStoreInstanceInfo;
+  private config: IIndexStoreConfig;
+  private bucket: Bucket;
+  constructor(config: IIndexStoreConfig) {
+    this.name = config.name;
+    this.config = config;
     const bucket = db.openBucket(config.name);
-    available.set(config.name, bucket);
-    const manager = bucket.manager();
+    this.bucket = bucket;
+  }
+  destroy() {
+    this.bucket.disconnect();
+    return Promise.resolve();
+  }
+  public registerViews() {
+    const config = this.config;
+    const manager = this.bucket.manager();
     const designconfig = { views: Object.keys(config.views).reduce(function(obj, key) {
       obj[key] = { map: config.views[key] };
       return obj;
@@ -57,46 +146,13 @@ const IndexStoreFactory = <
           res(result);
         }
       });
-    }).then(function(){
-      return { name: config.name, views: Object.keys(designconfig) };
     });
-  },
-  ensureExists(info: IIndexStoreInstanceInfo) {
-    return Promise.resolve(available.has(info.name));
-  },
-  destructInstance(info: IIndexStoreInstanceInfo) {
-    const boo = available.has(info.name);
-    if (boo) {
-      const bucket = available.get(info.name);
-      bucket.disconnect();
-      available.delete(info.name);
-    }
-    return Promise.resolve(boo);
-  },
-  constructHandle(info: IIndexStoreInstanceInfo) {
-    if (!available.has(info.name)) {
-      return Promise.reject(`${info.name} is not an available dispatcher`);
-    }
-    const kvstore = new IndexStoreHandle(info);
-    return Promise.resolve(kvstore);
-  },
-};
-
-class IndexStoreHandle<Value> implements IIndexedStore<Value> {
-  public name;
-  private info: IIndexStoreInstanceInfo;
-  constructor(info: IIndexStoreInstanceInfo) {
-    this.name = info.name;
-    this.info = info;
   }
   public create(value: Value, id?: string): Promise<string> {
-    if (!available.has(this.name)) {
-      return Promise.reject("This store does not exist");
-    }
     if (!id) {
       id = Date.now().toString(32) + "-" + Math.random().toString(32).substring(2);
     }
-    const bucket = available.get(this.name);
+    const bucket = this.bucket;
     return new Promise(function(res, rej) {
       bucket.insert(id, value, function(err, doc){
         if (err) {
@@ -108,10 +164,7 @@ class IndexStoreHandle<Value> implements IIndexedStore<Value> {
     });
   }
   public get(id: string): Promise<Value> {
-    if (!available.has(this.name)) {
-      return Promise.reject("This store does not exist");
-    }
-    const bucket = available.get(this.name);
+    const bucket = this.bucket;
     return new Promise(function(res, rej) {
       bucket.get(id, function(err, doc) {
         if (err) {
@@ -123,9 +176,6 @@ class IndexStoreHandle<Value> implements IIndexedStore<Value> {
     });
   }
   public query(view: string, options: IViewQueryConfig<Value> = DEFAULT_VIEWQUERY_CONFIG): Promise<Array<Value>> {
-    if (!available.has(this.name)) {
-      return Promise.reject("This store does not exist");
-    }
     if (this.info.views.indexOf(view) === -1) {
       return Promise.reject(`View[${view}] does not exist for database[${this.name}]`);
     }
@@ -142,7 +192,7 @@ class IndexStoreHandle<Value> implements IIndexedStore<Value> {
       }
       vq = vq.range(options.keyRange[0], options.keyRange[1], true);
     }
-    const bucket = available.get(this.name);
+    const bucket = this.bucket;
     return new Promise(function(res, rej){
       bucket.query(vq, function(err, docs){
         if (err) {
@@ -154,10 +204,7 @@ class IndexStoreHandle<Value> implements IIndexedStore<Value> {
     });
   }
   public update(id: string, newValues: Object): Promise<Value> {
-    if (!available.has(this.name)) {
-      return Promise.reject("This store does not exist");
-    }
-    const bucket = available.get(this.name);
+    const bucket = this.bucket;
     return this.get(id).then(function(oldValues){
       return new Promise(function(res, rej) {
         bucket.replace(id, newValues, function(err, doc) {
@@ -173,10 +220,7 @@ class IndexStoreHandle<Value> implements IIndexedStore<Value> {
     });
   }
   public delete(id: string): Promise<Value> {
-    if (!available.has(this.name)) {
-      return Promise.reject("This store does not exist");
-    }
-    const bucket = available.get(this.name);
+    const bucket = this.bucket;
     return new Promise(function(res, rej) {
       bucket.remove(id, function(err, doc) {
         if (err) {

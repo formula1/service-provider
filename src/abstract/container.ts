@@ -1,8 +1,15 @@
-import {IServiceHandle} from "../Service/Handle";
+import { IServiceHandle, IServiceInstance } from "../Service/Usable";
+import { IncomingMessage } from "http";
+import { Duplex } from "stream";
 
-interface IContainer extends IServiceHandle {
+interface IContainerHandle extends IServiceHandle {
   createConnection(): WebSocket;
   destroy(): Promise<any>;
 }
+interface IContainerInstance extends IServiceInstance {
+  construct(config): Promise<any>;
+  handleConnection(req: IncomingMessage, rawSocket: Duplex);
+  destruct(): Promise<any>;
+}
 
-export default IContainer;
+export { IContainerHandle, IContainerInstance };

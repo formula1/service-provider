@@ -5,8 +5,17 @@ const KeyValueStoreFactory = {
         if (available.has(config.name)) {
             return Promise.reject(new Error("Cannot create two maps of the same name"));
         }
-        available.set(config.name, new Map());
-        return Promise.resolve({ config: config, name: config.name, args: [] });
+        return this.constructInternal(config).then(function () {
+            return { config: config, name: config.name, args: [] };
+        });
+    },
+    constructInternal(config) {
+        if (available.has(config.name)) {
+            return Promise.resolve(available.get(config.name));
+        }
+        const instance = new KeyValueStoreInstance(config);
+        available.set(config.name, instance);
+        return instance;
     },
     ensureExists(info) {
         return Promise.resolve(available.has(info.name));
@@ -34,23 +43,38 @@ class KeyValueStoreHandle {
         if (!available.has(this.name)) {
             return Promise.reject("This Key Value Store Does not Exist");
         }
-        const kv = available.get(this.name);
-        return Promise.resolve(kv.get(key));
+        return available.get(this.name).get(key);
     }
     set(key, value) {
         if (!available.has(this.name)) {
             return Promise.reject("This Key Value Store Does not Exist");
         }
-        const kv = available.get(this.name);
-        const previousValue = kv.get(key);
-        kv.set(key, value);
-        return Promise.resolve(previousValue);
+        return available.get(this.name).set(key, value);
     }
     delete(key) {
         if (!available.has(this.name)) {
             return Promise.reject("This Key Value Store Does not Exist");
         }
-        const kv = available.get(this.name);
+        return available.get(this.name).delete(key);
+    }
+}
+class KeyValueStoreInstance {
+    constructor(info) {
+        this.name = info.name;
+        this.map = new Map();
+    }
+    get(key) {
+        const kv = this.map;
+        return Promise.resolve(kv.get(key));
+    }
+    set(key, value) {
+        const kv = this.map;
+        const previousValue = kv.get(key);
+        kv.set(key, value);
+        return Promise.resolve(previousValue);
+    }
+    delete(key) {
+        const kv = this.map;
         const previousValue = kv.get(key);
         kv.delete(key);
         return Promise.resolve(previousValue);

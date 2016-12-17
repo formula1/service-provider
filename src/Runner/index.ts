@@ -1,6 +1,5 @@
-import { IDependentServiceConfig, IServiceConfig } from "../Service/Config";
-import { IServiceHandle, IServiceHandleInit } from "../Service/Handle";
-import { IServiceInstanceFactory, IServiceInstanceInfo } from "../Service/Instance";
+import { IDependentServiceConfig, IServiceInstanceInfo, IServiceHandleInit, IServiceConfig } from "../Service/Config";
+import { IServiceInstanceFactory, IServiceHandle } from "../Service/Usable";
 
 class ServiceRunner {
   private instanceFactories: Map<string, IServiceInstanceFactory<IServiceHandle>>;
@@ -36,8 +35,9 @@ class ServiceRunner {
       }))
     :
       Promise.resolve([])
-    ).then(function(){
+    ).then(function(instanceConfigs){
       const instanceFactory = this.instanceFactories.get(config.type);
+      config.requireResults = instanceConfigs;
       return instanceFactory.constructInstance(config);
     }).then(function(containerInfo){
       this.createdServices.set(config.name, {

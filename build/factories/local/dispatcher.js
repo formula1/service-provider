@@ -5,8 +5,17 @@ const DispatcherFactory = {
         if (available.has(config.name)) {
             return Promise.reject(new Error("Cannot create two dispatchers of the same name"));
         }
-        available.set(config.name, new Map());
-        return Promise.resolve({ config: config, name: config.name, args: [] });
+        return this.constructInternal(config).then(function () {
+            return { config: config, name: config.name, args: [] };
+        });
+    },
+    constructInternal(config) {
+        if (available.has(config.name)) {
+            return Promise.resolve(available.get(config.name));
+        }
+        const ret = new DispatcherInstance(config);
+        available.set(config.name, ret);
+        return Promise.resolve(ret);
     },
     ensureExists(info) {
         return Promise.resolve(available.has(info.name));
@@ -26,15 +35,12 @@ const DispatcherFactory = {
         return Promise.resolve(kvstore);
     },
 };
-class DispatcherHandle {
-    constructor(info) {
-        this.name = info.name;
+class DispatcherInstance {
+    constructor(config) {
+        this.map = new Map();
     }
     dispatch(key, input) {
-        if (!available.has(this.name)) {
-            return Promise.reject("This dispatcher does not exist");
-        }
-        const map = available.get(this.name);
+        const map = this.map;
         const set = map.get(key);
         if (!set) {
             return Promise.resolve(0);
@@ -45,10 +51,7 @@ class DispatcherHandle {
         return Promise.resolve(set.size);
     }
     subscribe(key, fn) {
-        if (!available.has(this.name)) {
-            return Promise.reject("This dispatcher does not exist");
-        }
-        const map = available.get(this.name);
+        const map = this.map;
         if (!map.has(key)) {
             map.set(key, new Set());
         }
@@ -60,10 +63,7 @@ class DispatcherHandle {
         return Promise.resolve(false);
     }
     unsubscribe(key, fn) {
-        if (!available.has(this.name)) {
-            return Promise.reject("This dispatcher does not exist");
-        }
-        const map = available.get(this.name);
+        const map = this.map;
         let set = map.get(key);
         if (!set) {
             return Promise.resolve(false);
@@ -76,6 +76,32 @@ class DispatcherHandle {
             map.delete(key);
         }
         return Promise.resolve(true);
+    }
+}
+class DispatcherHandle {
+    constructor(info) {
+        this.name = info.name;
+    }
+    dispatch(key, input) {
+        if (!available.has(this.name)) {
+            return Promise.reject("This dispatcher does not exist");
+        }
+        const i = available.get(this.name);
+        return i.dispatch(key, input);
+    }
+    subscribe(key, fn) {
+        if (!available.has(this.name)) {
+            return Promise.reject("This dispatcher does not exist");
+        }
+        const i = available.get(this.name);
+        return i.subscribe(key, fn);
+    }
+    unsubscribe(key, fn) {
+        if (!available.has(this.name)) {
+            return Promise.reject("This dispatcher does not exist");
+        }
+        const i = available.get(this.name);
+        return i.unsubscribe(key, fn);
     }
 }
 Object.defineProperty(exports, "__esModule", { value: true });

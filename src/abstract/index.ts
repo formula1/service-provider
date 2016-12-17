@@ -1,14 +1,9 @@
-import IContainer from "./container";
-export { IContainer };
+export * from "./container";
 
-import IDispatcher from "./dispatcher";
-export { IDispatcher };
+export * from "./dispatcher";
 
-import IIndexedStore from "./indexed-store";
-export { IIndexedStore };
+export * from "./indexed-store";
 
-import IKeyValueStore from "./key-value-store";
-export { IKeyValueStore };
+export * from "./key-value-store";
 
-import ILambda from "./lambda";
-export { ILambda };
+export * from "./lambda";

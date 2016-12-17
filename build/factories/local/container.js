@@ -1,4 +1,5 @@
 "use strict";
+const index_1 = require("./index");
 const websocket_1 = require("websocket");
 const available = new Map();
 const ContainerFactory = {
@@ -6,10 +7,17 @@ const ContainerFactory = {
         if (available.has(config.name)) {
             return Promise.reject(new Error("Cannot create two maps of the same name"));
         }
-        const container = require(config.file);
-        return container.construct(config).then(function () {
-            available.set(config.name, container);
+        this.constructInternal(config).then(function () {
             return { args: [], config: config, name: config.name };
+        });
+    },
+    constructInternal(config) {
+        if (available.has(config.name)) {
+            return Promise.resolve(available.get(config.name));
+        }
+        return easyGenerate(config, index_1.LocalFactoryMap).then(function (container) {
+            available.set(config.name, container);
+            return container;
         });
     },
     ensureExists(info) {
@@ -36,6 +44,32 @@ const ContainerFactory = {
         return Promise.resolve(container);
     },
 };
+class ContainerInstance {
+    constructor(info, serviceHandles, methods) {
+        this.info = info;
+        this.services = serviceHandles;
+        this.methods = methods;
+    }
+    construct(config) {
+        return this.methods.construct.call(this, config);
+    }
+    handleConnection(req, socket) {
+        return this.methods.handleConnection.call(this, req, socket);
+    }
+    destruct() {
+        return this.methods.destruct.call(this);
+    }
+}
+const util_1 = require("../../abstract/util");
+function easyGenerate(config, factoryMap) {
+    return util_1.generateHandles(config.requireResults, factoryMap).then(function (handles) {
+        const containerMethods = require(config.file);
+        const container = new ContainerInstance(undefined, handles, containerMethods);
+        return container.construct(config).then(function () {
+            return container;
+        });
+    });
+}
 class ContainerHandle {
     constructor(info) {
         this.name = info.name;

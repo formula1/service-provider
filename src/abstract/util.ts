@@ -1,5 +1,5 @@
-import { IServiceHandle } from "../Service/Handle";
-import { IServiceInstanceFactory, IServiceInstanceInfo } from "../Service/Instance";
+import {  IServiceInstanceInfo } from "../Service/Config";
+import { IServiceInstanceFactory, IServiceHandle } from "../Service/Usable";
 
 function generateHandles(
   handleConfigs: Array<IServiceInstanceInfo>,
@@ -15,4 +15,4 @@ function generateHandles(
   }));
 }
 
-export default generateHandles;
+export { generateHandles };

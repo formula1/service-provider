@@ -26,8 +26,9 @@ class ServiceRunner {
                 return this.start(req);
             }))
             :
-                Promise.resolve([])).then(function () {
+                Promise.resolve([])).then(function (instanceConfigs) {
             const instanceFactory = this.instanceFactories.get(config.type);
+            config.requireResults = instanceConfigs;
             return instanceFactory.constructInstance(config);
         }).then(function (containerInfo) {
             this.createdServices.set(config.name, {

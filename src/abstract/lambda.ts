@@ -1,7 +1,11 @@
-import {IServiceHandle} from "../Service/Handle";
+import {IServiceHandle, IServiceInstance} from "../Service/Usable";
 
-interface ILambda<Input, Output> extends IServiceHandle {
+interface ILambdaHandle<Input, Output> extends IServiceHandle {
   run(input: Input): Promise<Output>;
 }
 
-export default ILambda;
+interface ILambdaInstance<Input, Output> extends IServiceInstance {
+  run(arg: Input): Promise<Output>;
+}
+
+export { ILambdaHandle, ILambdaInstance };

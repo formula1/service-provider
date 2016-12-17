@@ -4,6 +4,7 @@ interface IServiceConfig {
   name: string;
   type: ServiceType;
   public: "ANY" | "EXTERNAL" | "INTERNAL" | "SELF";
+  requireResults?: Array<IServiceInstanceInfo>;
   folder?: string;
 }
 
@@ -23,4 +24,20 @@ interface INetworkConfig {
   networksNecessary: Array<string>;
 }
 
-export { IServiceConfig, IDependentServiceConfig, IAbstractServiceConfig, INetworkConfig };
+interface IServiceHandleInit {
+  config: IServiceConfig;
+  hasError: boolean;
+  errorValue?: any;
+  containerInfo?: IServiceInstanceInfo;
+}
+
+interface IServiceInstanceInfo {
+  config: IServiceConfig;
+  args: Array<any>;
+}
+
+export {
+  IServiceConfig, IServiceHandleInit, IServiceInstanceInfo,
+  IDependentServiceConfig, IAbstractServiceConfig,
+  INetworkConfig
+};

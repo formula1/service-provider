@@ -1,6 +1,11 @@
-import {IServiceHandle} from "../Service/Handle";
+import {IServiceHandle, IServiceInstance} from "../Service/Usable";
 
-interface IDispatcher<Input> extends IServiceHandle {
+interface IDispatcherHandle<Input> extends IServiceHandle {
+  dispatch(key: string, arg: Input): Promise<number>;
+  subscribe(key: string, fn: Function): Promise<Boolean>;
+  unsubscribe(key: string, fn: Function): Promise<Boolean>;
+}
+interface IDispatcherInstance<Input> extends IServiceInstance {
   dispatch(key: string, arg: Input): Promise<number>;
   subscribe(key: string, fn: Function): Promise<Boolean>;
   unsubscribe(key: string, fn: Function): Promise<Boolean>;
@@ -19,4 +24,4 @@ A dispatcher is...
 
 */
 
-export default IDispatcher;
+export { IDispatcherHandle, IDispatcherInstance };

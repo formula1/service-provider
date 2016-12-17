@@ -9,5 +9,4 @@ function generateHandles(handleConfigs, instanceFactories) {
         return factory.constructHandle(handleConfig);
     }));
 }
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = generateHandles;
+exports.generateHandles = generateHandles;
