@@ -68,14 +68,14 @@ class ArchitectureConfiguration {
     context.serviceIsReady.set(name, isReady);
     context.availableServices.set(name, config);
 
-    validateNetworkVisibility(config, Array.from(tconfig.require.values()).filter(function(rName){
+    validateNetworkVisibility(config, tconfig.require.filter(function(rName){
       return context.availableServices.has(rName);
     }).map(function(rName){
       return context.availableServices.get(rName);
     }));
 
     validateNotCircular(tconfig.name, context.serviceDependencies);
-    context.serviceDependencies.set(name, Array.from(tconfig.require.values()));
+    context.serviceDependencies.set(name, tconfig.require);
     if (!context.pendingWatchers.has(name)) {
       return;
     }
@@ -85,7 +85,7 @@ class ArchitectureConfiguration {
   private ensureDependencyIsReady(config: IDependentServiceConfig) {
     const context = this.context;
     const availableServices = context.availableServices;
-    return Array.from(config.require.values()).reduce((isWaiting, value) => {
+    return config.require.reduce((isWaiting, value) => {
       if (!context.serviceDependents.has(value)) {
         context.serviceDependents.set(value, new Set());
       }
@@ -105,7 +105,7 @@ class ArchitectureConfiguration {
     const context = this.context;
     context.pendingWatchers.get(name).forEach((oname) => {
       const reqs = context.serviceDependencies.get(oname);
-      if (Array.from(reqs.values()).some((req) => {
+      if (reqs.some((req) => {
         return !context.availableServices.has(req);
       })) {
         return;

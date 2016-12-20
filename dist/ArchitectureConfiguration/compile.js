@@ -1,21 +1,26 @@
 "use strict";
 var pathUtil = require("path");
+var SERVICE_FILE_NAME = "service.json";
 function compileFolder(archConfig, rootFolder) {
     return readdirPromise(rootFolder).then(function (folders) {
         return Promise.all(folders.map(function (foldername) {
             var folderpath = pathUtil.join(rootFolder, foldername);
             return readdirPromise(folderpath).then(function (folderFiles) {
-                if (folderFiles.indexOf("services.json") === -1) {
+                if (folderFiles.indexOf(SERVICE_FILE_NAME) === -1) {
                     return false;
                 }
-                return readFilePromise(pathUtil.join(folderpath, "services.json"));
-            }).then(function (serviceConfigs) {
-                serviceConfigs.forEach(function (serviceConfig) {
-                    serviceConfig.folder = foldername;
-                    archConfig.register(serviceConfig);
+                return readFilePromise(pathUtil.join(folderpath, SERVICE_FILE_NAME)).then(function (configBuffer) {
+                    return JSON.parse(configBuffer.toString("utf-8"));
+                }).then(function (serviceConfigs) {
+                    serviceConfigs.forEach(function (serviceConfig) {
+                        serviceConfig.folder = foldername;
+                        archConfig.register(serviceConfig);
+                    });
                 });
             });
         }));
+    }).then(function () {
+        return archConfig.finalize();
     });
 }
 Object.defineProperty(exports, "__esModule", { value: true });

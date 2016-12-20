@@ -1,4 +1,5 @@
 "use strict";
+var pathUtil = require("path");
 var index_1 = require("./index");
 var websocket_1 = require("websocket");
 var available = new Map();
@@ -64,7 +65,7 @@ var ContainerInstance = (function () {
 var util_1 = require("../../abstract/util");
 function easyGenerate(config, factoryMap) {
     return util_1.generateHandles(config.requireResults, factoryMap).then(function (handles) {
-        var containerMethods = require(config.file);
+        var containerMethods = require(pathUtil.join(config.folder, config.file));
         var container = new ContainerInstance(undefined, handles, containerMethods);
         return container.construct(config).then(function () {
             return container;

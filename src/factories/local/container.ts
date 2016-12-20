@@ -1,3 +1,4 @@
+import * as pathUtil from "path";
 import { LocalFactoryMap } from "./index";
 import { w3cwebsocket } from "websocket";
 import { IContainerHandle, IContainerInstance } from "../../abstract";
@@ -88,7 +89,7 @@ function easyGenerate(
   factoryMap: Map<string, IServiceInstanceFactory<IServiceHandle>>
 ) {
   return generateHandles(config.requireResults, factoryMap).then(function(handles){
-    const containerMethods = <IContainerInstance> require(config.file);
+    const containerMethods = <IContainerInstance> require(pathUtil.join(config.folder, config.file));
     const container = new ContainerInstance(undefined, handles, containerMethods);
     return container.construct(config).then(function(){
       return container;

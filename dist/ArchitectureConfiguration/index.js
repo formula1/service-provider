@@ -45,13 +45,13 @@ var ArchitectureConfiguration = (function () {
         var isReady = this.ensureDependencyIsReady(tconfig);
         context.serviceIsReady.set(name, isReady);
         context.availableServices.set(name, config);
-        validate_network_visibility_1.default(config, Array.from(tconfig.require.values()).filter(function (rName) {
+        validate_network_visibility_1.default(config, tconfig.require.filter(function (rName) {
             return context.availableServices.has(rName);
         }).map(function (rName) {
             return context.availableServices.get(rName);
         }));
         validate_not_circular_1.default(tconfig.name, context.serviceDependencies);
-        context.serviceDependencies.set(name, Array.from(tconfig.require.values()));
+        context.serviceDependencies.set(name, tconfig.require);
         if (!context.pendingWatchers.has(name)) {
             return;
         }
@@ -60,7 +60,7 @@ var ArchitectureConfiguration = (function () {
     ArchitectureConfiguration.prototype.ensureDependencyIsReady = function (config) {
         var context = this.context;
         var availableServices = context.availableServices;
-        return Array.from(config.require.values()).reduce(function (isWaiting, value) {
+        return config.require.reduce(function (isWaiting, value) {
             if (!context.serviceDependents.has(value)) {
                 context.serviceDependents.set(value, new Set());
             }
@@ -79,7 +79,7 @@ var ArchitectureConfiguration = (function () {
         var context = this.context;
         context.pendingWatchers.get(name).forEach(function (oname) {
             var reqs = context.serviceDependencies.get(oname);
-            if (Array.from(reqs.values()).some(function (req) {
+            if (reqs.some(function (req) {
                 return !context.availableServices.has(req);
             })) {
                 return;

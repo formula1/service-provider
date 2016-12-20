@@ -1,3 +1,4 @@
+import * as pathUtil from "path";
 import { ILambdaHandle, ILambdaInstance } from "../../abstract";
 
 import { IServiceConfig, IServiceInstanceInfo, IAbstractServiceConfig, IDependentServiceConfig } from "../../Service/Config";
@@ -71,7 +72,7 @@ function easyGenerate<Input, Output>(
   factoryMap: Map<string, IServiceInstanceFactory<IServiceHandle>>
 ) {
   return generateHandles(config.requireResults, factoryMap).then(function(handles){
-    const containerMethod = require(config.file);
+    const containerMethod = require(pathUtil.join(config.folder, config.file));
     const container = new LambdaInstance<Input, Output>(undefined, handles, containerMethod);
     return container;
   });
