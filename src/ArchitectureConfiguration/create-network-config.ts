@@ -15,13 +15,14 @@ function createNetworkConfig(
     }
     if (!serviceDependents.has(config.name)) {
       if (config.type === "container") {
-        return;
+        return networkConfig;
       }
       throw new Error(`${config.name} is public type ${config.public} but not used internally`);
     }
     if (config.public === "SELF") {
       networkConfig.networksNecessary.push(config.folder);
     }
+    return networkConfig;
   }, <INetworkConfig> {
     connectionsNecessary: [],
     external: false,
