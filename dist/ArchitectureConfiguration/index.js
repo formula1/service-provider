@@ -39,23 +39,25 @@ var ArchitectureConfiguration = (function () {
         }
         if (!("require" in config)) {
             context.serviceDependencies.set(name, []);
-            return;
+            context.serviceIsReady.set(name, true);
+            context.availableServices.set(name, config);
         }
-        var tconfig = config;
-        var isReady = this.ensureDependencyIsReady(tconfig);
-        context.serviceIsReady.set(name, isReady);
-        context.availableServices.set(name, config);
-        validate_network_visibility_1.default(config, tconfig.require.filter(function (rName) {
-            return context.availableServices.has(rName);
-        }).map(function (rName) {
-            return context.availableServices.get(rName);
-        }));
-        validate_not_circular_1.default(tconfig.name, context.serviceDependencies);
-        context.serviceDependencies.set(name, tconfig.require);
-        if (!context.pendingWatchers.has(name)) {
-            return;
+        else {
+            var tconfig = config;
+            var isReady = this.ensureDependencyIsReady(tconfig);
+            context.serviceIsReady.set(name, isReady);
+            context.availableServices.set(name, config);
+            context.serviceDependencies.set(name, tconfig.require);
+            validate_network_visibility_1.default(config, tconfig.require.filter(function (rName) {
+                return context.availableServices.has(rName);
+            }).map(function (rName) {
+                return context.availableServices.get(rName);
+            }));
+            validate_not_circular_1.default(tconfig.name, context.serviceDependencies);
         }
-        this.resolvePending(name);
+        if (context.pendingWatchers.has(name)) {
+            this.resolvePending(name);
+        }
     };
     ArchitectureConfiguration.prototype.ensureDependencyIsReady = function (config) {
         var context = this.context;
@@ -68,7 +70,7 @@ var ArchitectureConfiguration = (function () {
                 if (!context.pendingWatchers.has(value)) {
                     context.pendingWatchers.set(value, []);
                 }
-                context.pendingWatchers.get(value).push(name);
+                context.pendingWatchers.get(value).push(config.name);
                 return true;
             }
             context.serviceDependents.get(value).add(config.name);

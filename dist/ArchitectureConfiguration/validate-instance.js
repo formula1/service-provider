@@ -2,7 +2,7 @@
 var fsUtil = require("fs");
 var pathUtil = require("path");
 function validateInstance(config) {
-    var absoluteLocation = pathUtil.join(config.folder, config.file);
+    var absoluteLocation = require.resolve(pathUtil.join(config.folder, config.file));
     if (!fsUtil.existsSync(absoluteLocation)) {
         throw new Error("location " + absoluteLocation + " does not exist");
     }
