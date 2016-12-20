@@ -61,25 +61,26 @@ class ArchitectureConfiguration {
     }
     if (!("require" in config)) {
       context.serviceDependencies.set(name, []);
-      return;
-    }
-    let tconfig = <IDependentServiceConfig> config;
-    const isReady = this.ensureDependencyIsReady(tconfig);
-    context.serviceIsReady.set(name, isReady);
-    context.availableServices.set(name, config);
+      context.serviceIsReady.set(name, true);
+      context.availableServices.set(name, config);
+    } else {
+      let tconfig = <IDependentServiceConfig> config;
+      const isReady = this.ensureDependencyIsReady(tconfig);
+      context.serviceIsReady.set(name, isReady);
+      context.availableServices.set(name, config);
+      context.serviceDependencies.set(name, tconfig.require);
 
-    validateNetworkVisibility(config, tconfig.require.filter(function(rName){
-      return context.availableServices.has(rName);
-    }).map(function(rName){
-      return context.availableServices.get(rName);
-    }));
+      validateNetworkVisibility(config, tconfig.require.filter(function(rName){
+        return context.availableServices.has(rName);
+      }).map(function(rName){
+        return context.availableServices.get(rName);
+      }));
 
-    validateNotCircular(tconfig.name, context.serviceDependencies);
-    context.serviceDependencies.set(name, tconfig.require);
-    if (!context.pendingWatchers.has(name)) {
-      return;
+      validateNotCircular(tconfig.name, context.serviceDependencies);
     }
-    this.resolvePending(name);
+    if (context.pendingWatchers.has(name)) {
+      this.resolvePending(name);
+    }
   }
 
   private ensureDependencyIsReady(config: IDependentServiceConfig) {
@@ -93,7 +94,7 @@ class ArchitectureConfiguration {
         if (!context.pendingWatchers.has(value)) {
           context.pendingWatchers.set(value, []);
         }
-        context.pendingWatchers.get(value).push(name);
+        context.pendingWatchers.get(value).push(config.name);
         return true;
       }
       context.serviceDependents.get(value).add(config.name);
