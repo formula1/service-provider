@@ -3,7 +3,7 @@ import * as fsUtil from "fs";
 import * as pathUtil from "path";
 
 function validateInstance(config: IAbstractServiceConfig) {
-  const absoluteLocation = pathUtil.join(config.folder, config.file);
+  const absoluteLocation = require.resolve(pathUtil.join(config.folder, config.file));
   if (!fsUtil.existsSync(absoluteLocation)) {
     throw new Error(`location ${absoluteLocation} does not exist`);
   }
