@@ -13,7 +13,7 @@ function compileFolder(archConfig, rootFolder) {
                     return JSON.parse(configBuffer.toString("utf-8"));
                 }).then(function (serviceConfigs) {
                     serviceConfigs.forEach(function (serviceConfig) {
-                        serviceConfig.folder = foldername;
+                        serviceConfig.folder = folderpath;
                         archConfig.register(serviceConfig);
                     });
                 });

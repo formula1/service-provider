@@ -16,7 +16,7 @@ function compileFolder(archConfig: ArchitectureConfiguration, rootFolder: string
           return JSON.parse(configBuffer.toString("utf-8"));
         }).then(function(serviceConfigs: Array<IServiceConfig>){
           serviceConfigs.forEach(function(serviceConfig){
-            serviceConfig.folder = foldername;
+            serviceConfig.folder = folderpath;
             archConfig.register(serviceConfig);
           });
         });
