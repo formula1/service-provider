@@ -1,7 +1,7 @@
 "use strict";
-const available = new Map();
-const DispatcherFactory = {
-    constructInstance(config) {
+var available = new Map();
+var DispatcherFactory = {
+    constructInstance: function (config) {
         if (available.has(config.name)) {
             return Promise.reject(new Error("Cannot create two dispatchers of the same name"));
         }
@@ -9,39 +9,39 @@ const DispatcherFactory = {
             return { config: config, name: config.name, args: [] };
         });
     },
-    constructInternal(config) {
+    constructInternal: function (config) {
         if (available.has(config.name)) {
             return Promise.resolve(available.get(config.name));
         }
-        const ret = new DispatcherInstance(config);
+        var ret = new DispatcherInstance(config);
         available.set(config.name, ret);
         return Promise.resolve(ret);
     },
-    ensureExists(info) {
+    ensureExists: function (info) {
         return Promise.resolve(available.has(info.name));
     },
-    destructInstance(info) {
-        const boo = available.has(info.name);
+    destructInstance: function (info) {
+        var boo = available.has(info.name);
         if (boo) {
             available.delete(info.name);
         }
         return Promise.resolve(boo);
     },
-    constructHandle(info) {
+    constructHandle: function (info) {
         if (!available.has(info.name)) {
-            return Promise.reject(`${info.name} is not an available dispatcher`);
+            return Promise.reject(info.name + " is not an available dispatcher");
         }
-        const kvstore = new DispatcherHandle(info);
+        var kvstore = new DispatcherHandle(info);
         return Promise.resolve(kvstore);
     },
 };
-class DispatcherInstance {
-    constructor(config) {
+var DispatcherInstance = (function () {
+    function DispatcherInstance(config) {
         this.map = new Map();
     }
-    dispatch(key, input) {
-        const map = this.map;
-        const set = map.get(key);
+    DispatcherInstance.prototype.dispatch = function (key, input) {
+        var map = this.map;
+        var set = map.get(key);
         if (!set) {
             return Promise.resolve(0);
         }
@@ -49,22 +49,22 @@ class DispatcherInstance {
             fn(input);
         });
         return Promise.resolve(set.size);
-    }
-    subscribe(key, fn) {
-        const map = this.map;
+    };
+    DispatcherInstance.prototype.subscribe = function (key, fn) {
+        var map = this.map;
         if (!map.has(key)) {
             map.set(key, new Set());
         }
-        const set = map.get("key");
+        var set = map.get("key");
         if (set.has(fn)) {
             return Promise.resolve(true);
         }
         set.add(fn);
         return Promise.resolve(false);
-    }
-    unsubscribe(key, fn) {
-        const map = this.map;
-        let set = map.get(key);
+    };
+    DispatcherInstance.prototype.unsubscribe = function (key, fn) {
+        var map = this.map;
+        var set = map.get(key);
         if (!set) {
             return Promise.resolve(false);
         }
@@ -76,33 +76,35 @@ class DispatcherInstance {
             map.delete(key);
         }
         return Promise.resolve(true);
-    }
-}
-class DispatcherHandle {
-    constructor(info) {
+    };
+    return DispatcherInstance;
+}());
+var DispatcherHandle = (function () {
+    function DispatcherHandle(info) {
         this.name = info.name;
     }
-    dispatch(key, input) {
+    DispatcherHandle.prototype.dispatch = function (key, input) {
         if (!available.has(this.name)) {
             return Promise.reject("This dispatcher does not exist");
         }
-        const i = available.get(this.name);
+        var i = available.get(this.name);
         return i.dispatch(key, input);
-    }
-    subscribe(key, fn) {
+    };
+    DispatcherHandle.prototype.subscribe = function (key, fn) {
         if (!available.has(this.name)) {
             return Promise.reject("This dispatcher does not exist");
         }
-        const i = available.get(this.name);
+        var i = available.get(this.name);
         return i.subscribe(key, fn);
-    }
-    unsubscribe(key, fn) {
+    };
+    DispatcherHandle.prototype.unsubscribe = function (key, fn) {
         if (!available.has(this.name)) {
             return Promise.reject("This dispatcher does not exist");
         }
-        const i = available.get(this.name);
+        var i = available.get(this.name);
         return i.unsubscribe(key, fn);
-    }
-}
+    };
+    return DispatcherHandle;
+}());
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = DispatcherFactory;

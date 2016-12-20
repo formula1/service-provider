@@ -2,12 +2,14 @@
 function validateNotCircular(name, modules) {
     return checkPath([name], modules);
 }
-function checkPath(path, modules, finished = new Set(), missing = new Set()) {
-    const current = path[0];
-    const deps = modules.get(current);
+function checkPath(path, modules, finished, missing) {
+    if (finished === void 0) { finished = new Set(); }
+    if (missing === void 0) { missing = new Set(); }
+    var current = path[0];
+    var deps = modules.get(current);
     deps.forEach(function (dep) {
         if (path.indexOf(dep) > -1) {
-            throw new Error(`[${path.concat[dep].join(", ")}] is circular`);
+            throw new Error("[" + path.concat[dep].join(", ") + "] is circular");
         }
         if (finished.has(dep)) {
             return;

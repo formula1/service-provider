@@ -1,14 +1,11 @@
 "use strict";
-const create_network_config_1 = require("./create-network-config");
-const validate_instance_1 = require("./validate-instance");
-const validate_network_visibility_1 = require("./validate-network-visibility");
-const validate_not_circular_1 = require("./validate-not-circular");
-const compile_1 = require("./compile");
-class ArchitectureConfiguration {
-    static compileFolder(folder) {
-        return compile_1.default(new ArchitectureConfiguration(), folder);
-    }
-    constructor() {
+var create_network_config_1 = require("./create-network-config");
+var validate_instance_1 = require("./validate-instance");
+var validate_network_visibility_1 = require("./validate-network-visibility");
+var validate_not_circular_1 = require("./validate-not-circular");
+var compile_1 = require("./compile");
+var ArchitectureConfiguration = (function () {
+    function ArchitectureConfiguration() {
         this.context = {
             availableServices: new Map(),
             pendingWatchers: new Map(),
@@ -17,22 +14,25 @@ class ArchitectureConfiguration {
             serviceIsReady: new Map(),
         };
     }
-    finalize() {
-        const context = this.context;
+    ArchitectureConfiguration.compileFolder = function (folder) {
+        return compile_1.default(new ArchitectureConfiguration(), folder);
+    };
+    ArchitectureConfiguration.prototype.finalize = function () {
+        var context = this.context;
         if (context.pendingWatchers.size > 0) {
-            throw new Error(`still waiting on services: [${Array.from(context.pendingWatchers.keys()).join(", ")}]`);
+            throw new Error("still waiting on services: [" + Array.from(context.pendingWatchers.keys()).join(", ") + "]");
         }
-        const networkConfig = create_network_config_1.default(context.availableServices, context.serviceDependents, context.serviceDependencies);
+        var networkConfig = create_network_config_1.default(context.availableServices, context.serviceDependents, context.serviceDependencies);
         return {
             availableServices: context.availableServices,
             networkConfiguration: networkConfig,
         };
-    }
-    register(config) {
-        const context = this.context;
-        const name = config.name;
+    };
+    ArchitectureConfiguration.prototype.register = function (config) {
+        var context = this.context;
+        var name = config.name;
         if (context.availableServices.has(name)) {
-            throw new Error(`${name} has already been registered as a service`);
+            throw new Error(name + " has already been registered as a service");
         }
         if ("file" in config) {
             validate_instance_1.default(config);
@@ -41,8 +41,8 @@ class ArchitectureConfiguration {
             context.serviceDependencies.set(name, []);
             return;
         }
-        let tconfig = config;
-        const isReady = this.ensureDependencyIsReady(tconfig);
+        var tconfig = config;
+        var isReady = this.ensureDependencyIsReady(tconfig);
         context.serviceIsReady.set(name, isReady);
         context.availableServices.set(name, config);
         validate_network_visibility_1.default(config, Array.from(tconfig.require.values()).filter(function (rName) {
@@ -56,11 +56,11 @@ class ArchitectureConfiguration {
             return;
         }
         this.resolvePending(name);
-    }
-    ensureDependencyIsReady(config) {
-        const context = this.context;
-        const availableServices = context.availableServices;
-        return Array.from(config.require.values()).reduce((isWaiting, value) => {
+    };
+    ArchitectureConfiguration.prototype.ensureDependencyIsReady = function (config) {
+        var context = this.context;
+        var availableServices = context.availableServices;
+        return Array.from(config.require.values()).reduce(function (isWaiting, value) {
             if (!context.serviceDependents.has(value)) {
                 context.serviceDependents.set(value, new Set());
             }
@@ -74,12 +74,12 @@ class ArchitectureConfiguration {
             context.serviceDependents.get(value).add(config.name);
             return isWaiting;
         }, false);
-    }
-    resolvePending(name) {
-        const context = this.context;
-        context.pendingWatchers.get(name).forEach((oname) => {
-            const reqs = context.serviceDependencies.get(oname);
-            if (Array.from(reqs.values()).some((req) => {
+    };
+    ArchitectureConfiguration.prototype.resolvePending = function (name) {
+        var context = this.context;
+        context.pendingWatchers.get(name).forEach(function (oname) {
+            var reqs = context.serviceDependencies.get(oname);
+            if (Array.from(reqs.values()).some(function (req) {
                 return !context.availableServices.has(req);
             })) {
                 return;
@@ -87,8 +87,9 @@ class ArchitectureConfiguration {
             context.serviceIsReady.set(oname, true);
         });
         context.pendingWatchers.delete(name);
-    }
-}
+    };
+    return ArchitectureConfiguration;
+}());
 ;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = ArchitectureConfiguration;

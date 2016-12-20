@@ -1,10 +1,10 @@
 "use strict";
-const container_1 = require("./container");
-const dispatcher_1 = require("./dispatcher");
-const indexed_store_1 = require("./indexed-store");
-const key_value_store_1 = require("./key-value-store");
-const lambda_1 = require("./lambda");
-const factoryMap = new Map();
+var container_1 = require("./container");
+var dispatcher_1 = require("./dispatcher");
+var indexed_store_1 = require("./indexed-store");
+var key_value_store_1 = require("./key-value-store");
+var lambda_1 = require("./lambda");
+var factoryMap = new Map();
 exports.LocalFactoryMap = factoryMap;
 factoryMap.set("container", container_1.default);
 factoryMap.set("dispatcher", dispatcher_1.default);

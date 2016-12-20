@@ -1,6 +1,6 @@
 "use strict";
 function createNetworkConfig(configMap, serviceDependents, serviceDependencies) {
-    return Array.from(configMap.values()).reduce((networkConfig, config) => {
+    return Array.from(configMap.values()).reduce(function (networkConfig, config) {
         if (config.public === "EXTERNAL") {
             networkConfig.external = true;
             return networkConfig;
@@ -12,7 +12,7 @@ function createNetworkConfig(configMap, serviceDependents, serviceDependencies) 
             if (config.type === "container") {
                 return;
             }
-            throw new Error(`${config.name} is public type ${config.public} but not used internally`);
+            throw new Error(config.name + " is public type " + config.public + " but not used internally");
         }
         if (config.public === "SELF") {
             networkConfig.networksNecessary.push(config.folder);

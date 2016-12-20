@@ -1,16 +1,16 @@
 "use strict";
-const couchbase_1 = require("couchbase");
-const Cluster = couchbase_1.Mock.Cluster;
-const ViewQuery = couchbase_1.Mock.ViewQuery;
-const db = new Cluster();
-const available = new Map();
-const DEFAULT_VIEWQUERY_CONFIG = {
+var couchbase_1 = require("couchbase");
+var Cluster = couchbase_1.Mock.Cluster;
+var ViewQuery = couchbase_1.Mock.ViewQuery;
+var db = new Cluster();
+var available = new Map();
+var DEFAULT_VIEWQUERY_CONFIG = {
     ascending: true,
     limit: 10,
     skip: 0,
 };
-const IndexStoreFactory = {
-    constructInstance(config) {
+var IndexStoreFactory = {
+    constructInstance: function (config) {
         if (available.has(config.name)) {
             return Promise.reject(new Error("Cannot create two dispatchers of the same name"));
         }
@@ -18,88 +18,90 @@ const IndexStoreFactory = {
             return { name: config.name, views: Object.keys(config.views) };
         });
     },
-    constructInternal(config) {
+    constructInternal: function (config) {
         if (available.has(config.name)) {
             return Promise.resolve(available.get(config.name));
         }
-        const instance = new IndexStoreInstance(config);
+        var instance = new IndexStoreInstance(config);
         instance.registerViews().then(function () {
             available.set(config.name, instance);
             return instance;
         });
     },
-    ensureExists(info) {
+    ensureExists: function (info) {
         return Promise.resolve(available.has(info.name));
     },
-    destructInstance(info) {
+    destructInstance: function (info) {
         if (!available.has(info.name)) {
             return Promise.resolve(false);
         }
-        const instance = available.get(info.name);
+        var instance = available.get(info.name);
         available.delete(info.name);
         instance.destroy().then(function () {
             return true;
         });
     },
-    constructHandle(info) {
+    constructHandle: function (info) {
         if (!available.has(info.name)) {
-            return Promise.reject(`${info.name} is not an available dispatcher`);
+            return Promise.reject(info.name + " is not an available dispatcher");
         }
-        const kvstore = new IndexStoreHandle(info);
+        var kvstore = new IndexStoreHandle(info);
         return Promise.resolve(kvstore);
     },
 };
-class IndexStoreHandle {
-    constructor(info) {
+var IndexStoreHandle = (function () {
+    function IndexStoreHandle(info) {
         this.name = info.name;
         this.info = info;
     }
-    create(value, id) {
+    IndexStoreHandle.prototype.create = function (value, id) {
         if (!available.has(this.name)) {
             return Promise.reject("This store does not exist");
         }
         return available.get(this.name).create(value, id);
-    }
-    get(id) {
+    };
+    IndexStoreHandle.prototype.get = function (id) {
         if (!available.has(this.name)) {
             return Promise.reject("This store does not exist");
         }
         return available.get(this.name).get(id);
-    }
-    delete(id) {
+    };
+    IndexStoreHandle.prototype.delete = function (id) {
         if (!available.has(this.name)) {
             return Promise.reject("This store does not exist");
         }
         return available.get(this.name).delete(id);
-    }
-    update(id, newValues) {
+    };
+    IndexStoreHandle.prototype.update = function (id, newValues) {
         if (!available.has(this.name)) {
             return Promise.reject("This store does not exist");
         }
         return available.get(this.name).update(id, newValues);
-    }
-    query(view, options = DEFAULT_VIEWQUERY_CONFIG) {
+    };
+    IndexStoreHandle.prototype.query = function (view, options) {
+        if (options === void 0) { options = DEFAULT_VIEWQUERY_CONFIG; }
         if (!available.has(this.name)) {
             return Promise.reject("This store does not exist");
         }
         return available.get(this.name).update(view, options);
-    }
-}
-class IndexStoreInstance {
-    constructor(config) {
+    };
+    return IndexStoreHandle;
+}());
+var IndexStoreInstance = (function () {
+    function IndexStoreInstance(config) {
         this.name = config.name;
         this.config = config;
-        const bucket = db.openBucket(config.name);
+        var bucket = db.openBucket(config.name);
         this.bucket = bucket;
     }
-    destroy() {
+    IndexStoreInstance.prototype.destroy = function () {
         this.bucket.disconnect();
         return Promise.resolve();
-    }
-    registerViews() {
-        const config = this.config;
-        const manager = this.bucket.manager();
-        const designconfig = { views: Object.keys(config.views).reduce(function (obj, key) {
+    };
+    IndexStoreInstance.prototype.registerViews = function () {
+        var config = this.config;
+        var manager = this.bucket.manager();
+        var designconfig = { views: Object.keys(config.views).reduce(function (obj, key) {
                 obj[key] = { map: config.views[key] };
                 return obj;
             }, {}) };
@@ -113,12 +115,12 @@ class IndexStoreInstance {
                 }
             });
         });
-    }
-    create(value, id) {
+    };
+    IndexStoreInstance.prototype.create = function (value, id) {
         if (!id) {
             id = Date.now().toString(32) + "-" + Math.random().toString(32).substring(2);
         }
-        const bucket = this.bucket;
+        var bucket = this.bucket;
         return new Promise(function (res, rej) {
             bucket.insert(id, value, function (err, doc) {
                 if (err) {
@@ -129,9 +131,9 @@ class IndexStoreInstance {
                 }
             });
         });
-    }
-    get(id) {
-        const bucket = this.bucket;
+    };
+    IndexStoreInstance.prototype.get = function (id) {
+        var bucket = this.bucket;
         return new Promise(function (res, rej) {
             bucket.get(id, function (err, doc) {
                 if (err) {
@@ -142,13 +144,14 @@ class IndexStoreInstance {
                 }
             });
         });
-    }
-    query(view, options = DEFAULT_VIEWQUERY_CONFIG) {
+    };
+    IndexStoreInstance.prototype.query = function (view, options) {
+        if (options === void 0) { options = DEFAULT_VIEWQUERY_CONFIG; }
         if (this.info.views.indexOf(view) === -1) {
-            return Promise.reject(`View[${view}] does not exist for database[${this.name}]`);
+            return Promise.reject("View[" + view + "] does not exist for database[" + this.name + "]");
         }
         options = Object.assign({}, DEFAULT_VIEWQUERY_CONFIG, options);
-        let vq = ViewQuery.from(this.name, view);
+        var vq = ViewQuery.from(this.name, view);
         vq = vq.order(options.ascending ? ViewQuery.Order.ASCENDING : ViewQuery.Order.DESCENDING);
         vq = vq.limit(options.limit);
         vq = vq.skip(options.skip);
@@ -157,11 +160,11 @@ class IndexStoreInstance {
         }
         else if ("keyRange" in options) {
             if (options.keyRange[0] === undefined && options.keyRange[1] === undefined) {
-                return Promise.reject(`When providing a keyrange, both cannot be undefined`);
+                return Promise.reject("When providing a keyrange, both cannot be undefined");
             }
             vq = vq.range(options.keyRange[0], options.keyRange[1], true);
         }
-        const bucket = this.bucket;
+        var bucket = this.bucket;
         return new Promise(function (res, rej) {
             bucket.query(vq, function (err, docs) {
                 if (err) {
@@ -172,9 +175,9 @@ class IndexStoreInstance {
                 }
             });
         });
-    }
-    update(id, newValues) {
-        const bucket = this.bucket;
+    };
+    IndexStoreInstance.prototype.update = function (id, newValues) {
+        var bucket = this.bucket;
         return this.get(id).then(function (oldValues) {
             return new Promise(function (res, rej) {
                 bucket.replace(id, newValues, function (err, doc) {
@@ -189,9 +192,9 @@ class IndexStoreInstance {
                 return oldValues;
             });
         });
-    }
-    delete(id) {
-        const bucket = this.bucket;
+    };
+    IndexStoreInstance.prototype.delete = function (id) {
+        var bucket = this.bucket;
         return new Promise(function (res, rej) {
             bucket.remove(id, function (err, doc) {
                 if (err) {
@@ -202,7 +205,8 @@ class IndexStoreInstance {
                 }
             });
         });
-    }
-}
+    };
+    return IndexStoreInstance;
+}());
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = IndexStoreFactory;

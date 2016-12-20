@@ -1,14 +1,14 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es6",
+        "target": "es5",
         "lib": ["es6", "dom"],
         "moduleResolution" : "node",
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "noEmitHelpers": true,
         "noEmitOnError": true,
-        "outDir": "build",
+        "outDir": "dist",
         "rootDir": "src",
         "typeRoots": [
           "./node_modules/@types"

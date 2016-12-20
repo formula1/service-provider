@@ -1,9 +1,9 @@
 "use strict";
-const index_1 = require("./index");
-const websocket_1 = require("websocket");
-const available = new Map();
-const ContainerFactory = {
-    constructInstance(config) {
+var index_1 = require("./index");
+var websocket_1 = require("websocket");
+var available = new Map();
+var ContainerFactory = {
+    constructInstance: function (config) {
         if (available.has(config.name)) {
             return Promise.reject(new Error("Cannot create two maps of the same name"));
         }
@@ -11,7 +11,7 @@ const ContainerFactory = {
             return { args: [], config: config, name: config.name };
         });
     },
-    constructInternal(config) {
+    constructInternal: function (config) {
         if (available.has(config.name)) {
             return Promise.resolve(available.get(config.name));
         }
@@ -20,65 +20,67 @@ const ContainerFactory = {
             return container;
         });
     },
-    ensureExists(info) {
+    ensureExists: function (info) {
         return Promise.resolve(available.has(info.name));
     },
-    destructInstance(info) {
+    destructInstance: function (info) {
         return Promise.resolve().then(function () {
-            const boo = available.has(info.name);
+            var boo = available.has(info.name);
             if (!boo) {
                 return boo;
             }
-            const container = available.get(info.name);
+            var container = available.get(info.name);
             available.delete(info.name);
             return container.destruct().then(function () {
                 return boo;
             });
         });
     },
-    constructHandle(info) {
+    constructHandle: function (info) {
         if (!available.has(info.name)) {
-            return Promise.reject(`${info.name} is not an available kvstore`);
+            return Promise.reject(info.name + " is not an available kvstore");
         }
-        const container = new ContainerHandle(info);
+        var container = new ContainerHandle(info);
         return Promise.resolve(container);
     },
 };
-class ContainerInstance {
-    constructor(info, serviceHandles, methods) {
+var ContainerInstance = (function () {
+    function ContainerInstance(info, serviceHandles, methods) {
         this.info = info;
         this.services = serviceHandles;
         this.methods = methods;
     }
-    construct(config) {
+    ContainerInstance.prototype.construct = function (config) {
         return this.methods.construct.call(this, config);
-    }
-    handleConnection(req, socket) {
+    };
+    ContainerInstance.prototype.handleConnection = function (req, socket) {
         return this.methods.handleConnection.call(this, req, socket);
-    }
-    destruct() {
+    };
+    ContainerInstance.prototype.destruct = function () {
         return this.methods.destruct.call(this);
-    }
-}
-const util_1 = require("../../abstract/util");
+    };
+    return ContainerInstance;
+}());
+var util_1 = require("../../abstract/util");
 function easyGenerate(config, factoryMap) {
     return util_1.generateHandles(config.requireResults, factoryMap).then(function (handles) {
-        const containerMethods = require(config.file);
-        const container = new ContainerInstance(undefined, handles, containerMethods);
+        var containerMethods = require(config.file);
+        var container = new ContainerInstance(undefined, handles, containerMethods);
         return container.construct(config).then(function () {
             return container;
         });
     });
 }
-class ContainerHandle {
-    constructor(info) {
+var ContainerHandle = (function () {
+    function ContainerHandle(info) {
         this.name = info.name;
     }
-    createConnection() {
-        return new websocket_1.w3cwebsocket(`http://127.0.0.1/${this.name}`);
-    }
+    ContainerHandle.prototype.createConnection = function () {
+        return new websocket_1.w3cwebsocket("http://127.0.0.1/" + this.name);
+    };
     ;
-    destroy() { return Promise.resolve(); }
-}
+    ContainerHandle.prototype.destroy = function () { return Promise.resolve(); };
+    return ContainerHandle;
+}());
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = ContainerFactory;

@@ -1,9 +1,9 @@
 "use strict";
-const pathUtil = require("path");
+var pathUtil = require("path");
 function compileFolder(archConfig, rootFolder) {
     return readdirPromise(rootFolder).then(function (folders) {
         return Promise.all(folders.map(function (foldername) {
-            const folderpath = pathUtil.join(rootFolder, foldername);
+            var folderpath = pathUtil.join(rootFolder, foldername);
             return readdirPromise(folderpath).then(function (folderFiles) {
                 if (folderFiles.indexOf("services.json") === -1) {
                     return false;
@@ -20,8 +20,9 @@ function compileFolder(archConfig, rootFolder) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = compileFolder;
-const fsUtil = require("fs");
-function readFilePromise(filename, encoding = "utf-8") {
+var fsUtil = require("fs");
+function readFilePromise(filename, encoding) {
+    if (encoding === void 0) { encoding = "utf-8"; }
     return new Promise(function (res, rej) {
         fsUtil.readFile(filename, encoding, function (err, str) {
             if (err) {
