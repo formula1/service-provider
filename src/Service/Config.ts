@@ -24,11 +24,14 @@ interface INetworkConfig {
   networksNecessary: Array<string>;
 }
 
+type ServiceHandleState = "pending" | "error" | "ready";
+
 interface IServiceHandleInit {
   config: IServiceConfig;
-  hasError: boolean;
-  errorValue?: any;
-  containerInfo?: IServiceInstanceInfo;
+  state: ServiceHandleState;
+  pending: Array<[Function, Function]>;
+  error?: any;
+  value?: IServiceInstanceInfo;
 }
 
 interface IServiceInstanceInfo {

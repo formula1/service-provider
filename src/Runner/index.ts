@@ -14,17 +14,34 @@ class ServiceRunner {
     this.createdServices = new Map();
   }
   public start(name): Promise<IServiceInstanceInfo> {
-    if (!this.createdServices.has(name)) {
+    return Promise.resolve().then(function(){
+      if (this.createdServices.has(name)) {
+        return this.createdServices.get(name);
+      }
       if (!this.availableServices.has(name)) {
         return Promise.reject(new Error(`${name} is not an available service`));
       }
-      return this.createContainer(this.availableServices.get(name));
-    }
-    const serviceModule = this.createdServices.get(name);
-    if (serviceModule.hasError) {
-      return Promise.reject(serviceModule.errorValue);
-    }
-    return Promise.resolve(serviceModule.containerInfo);
+      const config = this.availableServices.get(name);
+      this.createContainer(config).then(
+        this.finishPending.bind(this, name, false),
+        this.finishPending.bind(this, name, true)
+      );
+      this.createdServices.set(name, {
+        config: config,
+        state: "pending",
+        value: [],
+      });
+      return this.createdServices.get(name);
+    }).then(function(serviceModule: IServiceHandleInit){
+      return new Promise(function(res, rej){
+        switch (serviceModule.state) {
+          case "error" : return rej(serviceModule.error);
+          case "ready" : return res(serviceModule.value);
+          case "pending" : serviceModule.pending.push([res, rej]);
+          default : rej("non-existant type");
+        }
+      });
+    });
   }
   private createContainer(config: IServiceConfig): Promise<IServiceInstanceInfo> {
     const { createdServices, instanceFactories } = this;
@@ -32,33 +49,34 @@ class ServiceRunner {
       return Promise.reject(new Error(`Type[${config.type}] not available for construction from [${Array.from(this.instanceFactories.keys()).join(", ")}]`));
     }
     return ("require" in config ?
-      (<IDependentServiceConfig> config).require.reduce((p, req) => {
-        return p.then((configArray) => {
-          return this.start(req).then(function(info){
-            return configArray.concat([ info ]);
-          });
-        });
-      }, Promise.resolve(<Array<IServiceInstanceInfo>> []))
+      Promise.all((<IDependentServiceConfig> config).require.map((req) => {
+        return this.start(req);
+      }))
     :
       Promise.resolve([])
     ).then(function(instanceConfigs){
       const instanceFactory = instanceFactories.get(config.type);
       config.requireResults = instanceConfigs;
       return instanceFactory.constructInstance(config);
-    }).then(function(containerInfo){
-      createdServices.set(config.name, {
-        config: config,
-        containerInfo: containerInfo,
-        hasError: false,
-      });
-      return containerInfo;
-    }, (e) => {
-      createdServices.set(config.name, {
-        config: config,
-        errorValue: e.message || e,
-        hasError: true,
-      });
-      throw e;
+    });
+  }
+  private finishPending(name, error, value) {
+    const init = this.createdServices.get(name);
+    let resrej;
+    if (error) {
+      init.state = "error";
+      init.error = value;
+      resrej = 1;
+    } else {
+      init.state = "ready";
+      init.value = value;
+      resrej = 0;
+    }
+    const pending = init.pending;
+    init.pending = [];
+    this.createdServices.set(name, init);
+    pending.forEach(function(resrejFns){
+      return resrejFns[resrej](value);
     });
   }
 }

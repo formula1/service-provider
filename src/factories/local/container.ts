@@ -21,7 +21,7 @@ const ContainerFactory: IServiceInstanceFactory<IContainerHandle> = {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two maps of the same name"));
     }
-    this.constructInternal(config).then(function(){
+    return this.constructInternal(config).then(function(){
       return { args: [], config: config, name: config.name };
     });
   },
