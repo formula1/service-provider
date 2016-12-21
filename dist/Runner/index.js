@@ -6,21 +6,22 @@ var ServiceRunner = (function () {
         this.createdServices = new Map();
     }
     ServiceRunner.prototype.start = function (name) {
+        var _this = this;
         return Promise.resolve().then(function () {
-            if (this.createdServices.has(name)) {
-                return this.createdServices.get(name);
+            if (_this.createdServices.has(name)) {
+                return _this.createdServices.get(name);
             }
-            if (!this.availableServices.has(name)) {
-                return Promise.reject(new Error(name + " is not an available service"));
+            if (!_this.availableServices.has(name)) {
+                throw new Error(name + " is not an available service");
             }
-            var config = this.availableServices.get(name);
-            this.createContainer(config).then(this.finishPending.bind(this, name, false), this.finishPending.bind(this, name, true));
-            this.createdServices.set(name, {
+            var config = _this.availableServices.get(name);
+            _this.createContainer(config).then(_this.finishPending.bind(_this, name, false), _this.finishPending.bind(_this, name, true));
+            _this.createdServices.set(name, {
                 config: config,
                 state: "pending",
-                value: [],
+                pending: [],
             });
-            return this.createdServices.get(name);
+            return _this.createdServices.get(name);
         }).then(function (serviceModule) {
             return new Promise(function (res, rej) {
                 switch (serviceModule.state) {
@@ -51,23 +52,23 @@ var ServiceRunner = (function () {
     };
     ServiceRunner.prototype.finishPending = function (name, error, value) {
         var init = this.createdServices.get(name);
-        var resrej;
+        var pending = init.pending;
+        init.pending = [];
+        this.createdServices.set(name, init);
         if (error) {
             init.state = "error";
             init.error = value;
-            resrej = 1;
+            pending.forEach(function (resrejFns) {
+                return resrejFns[1](init.error);
+            });
         }
         else {
             init.state = "ready";
             init.value = value;
-            resrej = 0;
+            pending.forEach(function (resrejFns) {
+                return resrejFns[0](init.value);
+            });
         }
-        var pending = init.pending;
-        init.pending = [];
-        this.createdServices.set(name, init);
-        pending.forEach(function (resrejFns) {
-            return resrejFns[resrej](value);
-        });
     };
     return ServiceRunner;
 }());

@@ -14,12 +14,12 @@ class ServiceRunner {
     this.createdServices = new Map();
   }
   public start(name): Promise<IServiceInstanceInfo> {
-    return Promise.resolve().then(function(){
+    return Promise.resolve().then(() => {
       if (this.createdServices.has(name)) {
         return this.createdServices.get(name);
       }
       if (!this.availableServices.has(name)) {
-        return Promise.reject(new Error(`${name} is not an available service`));
+        throw new Error(`${name} is not an available service`);
       }
       const config = this.availableServices.get(name);
       this.createContainer(config).then(
@@ -29,10 +29,10 @@ class ServiceRunner {
       this.createdServices.set(name, {
         config: config,
         state: "pending",
-        value: [],
+        pending: [],
       });
       return this.createdServices.get(name);
-    }).then(function(serviceModule: IServiceHandleInit){
+    }).then(function(serviceModule: IServiceHandleInit): Promise<IServiceInstanceInfo> {
       return new Promise(function(res, rej){
         switch (serviceModule.state) {
           case "error" : return rej(serviceModule.error);
@@ -62,22 +62,22 @@ class ServiceRunner {
   }
   private finishPending(name, error, value) {
     const init = this.createdServices.get(name);
-    let resrej;
-    if (error) {
-      init.state = "error";
-      init.error = value;
-      resrej = 1;
-    } else {
-      init.state = "ready";
-      init.value = value;
-      resrej = 0;
-    }
     const pending = init.pending;
     init.pending = [];
     this.createdServices.set(name, init);
-    pending.forEach(function(resrejFns){
-      return resrejFns[resrej](value);
-    });
+    if (error) {
+      init.state = "error";
+      init.error = value;
+      pending.forEach(function(resrejFns){
+        return resrejFns[1](init.error);
+      });
+    } else {
+      init.state = "ready";
+      init.value = value;
+      pending.forEach(function(resrejFns){
+        return resrejFns[0](init.value);
+      });
+    }
   }
 }
 
