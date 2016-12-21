@@ -7,6 +7,11 @@ function generateHandles(handleConfigs, instanceFactories) {
         }
         var factory = instanceFactories.get(serviceconfig.type);
         return factory.constructHandle(handleConfig);
-    }));
+    })).then(function (handles) {
+        return handles.reduce(function (map, handle) {
+            map.set(handle.info.config.name, handle);
+            return map;
+        }, new Map());
+    });
 }
 exports.generateHandles = generateHandles;

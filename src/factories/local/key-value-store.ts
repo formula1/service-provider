@@ -25,7 +25,7 @@ const KeyValueStoreFactory = <
     }
     const instance = new KeyValueStoreInstance(config);
     available.set(config.name, instance);
-    return instance;
+    return Promise.resolve(instance);
   },
   ensureExists(info: IKeyValueInstanceInfo) {
     return Promise.resolve(available.has(info.name));
@@ -48,8 +48,10 @@ const KeyValueStoreFactory = <
 
 class KeyValueStoreHandle<Key, Value> implements KeyValueStoreHandle<Key, Value> {
   public name;
+  public info;
   constructor(info: IKeyValueInstanceInfo) {
     this.name = info.name;
+    this.info = info;
   }
   public get(key: Key): Promise<Value> {
     if (!available.has(this.name)) {

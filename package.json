@@ -1,6 +1,6 @@
 {
   "name": "service-provider",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "",
   "main": "./dist/index.js",
   "typings": "./typings.d.ts",
@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@types/couchbase": "^2.1.30",
+    "@types/node": "^6.0.52",
     "@types/websocket": "0.0.32",
     "couchbase": "^2.2.5",
     "rimraf": "^2.5.4",

@@ -66,6 +66,9 @@ var util_1 = require("../../abstract/util");
 function easyGenerate(config, factoryMap) {
     return util_1.generateHandles(config.requireResults, factoryMap).then(function (handles) {
         var containerMethods = require(pathUtil.join(config.folder, config.file));
+        if (containerMethods.default) {
+            containerMethods = containerMethods.default;
+        }
         var container = new ContainerInstance(undefined, handles, containerMethods);
         return container.construct(config).then(function () {
             return container;
@@ -75,6 +78,7 @@ function easyGenerate(config, factoryMap) {
 var ContainerHandle = (function () {
     function ContainerHandle(info) {
         this.name = info.name;
+        this.info = info;
     }
     ContainerHandle.prototype.createConnection = function () {
         return new websocket_1.w3cwebsocket("http://127.0.0.1/" + this.name);

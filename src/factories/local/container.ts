@@ -16,9 +16,7 @@ interface IContainerInstanceInfo extends IServiceInstanceInfo {
   name: string;
 }
 
-const ContainerFactory = <
-  IServiceInstanceFactory<IContainerHandle>
-> {
+const ContainerFactory: IServiceInstanceFactory<IContainerHandle> = {
   constructInstance(config): Promise<IContainerInstanceInfo> {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two maps of the same name"));
@@ -63,10 +61,10 @@ const ContainerFactory = <
 
 
 class ContainerInstance implements IContainerInstance {
-  public services: Array<IServiceHandle>;
+  public services: Map<string, IServiceHandle>;
   public methods: IContainerInstance;
   public info: IServiceInstanceInfo;
-  constructor(info, serviceHandles: Array<IServiceHandle>, methods: IContainerInstance) {
+  constructor(info, serviceHandles, methods: IContainerInstance) {
     this.info = info;
     this.services = serviceHandles;
     this.methods = methods;
@@ -89,7 +87,10 @@ function easyGenerate(
   factoryMap: Map<string, IServiceInstanceFactory<IServiceHandle>>
 ) {
   return generateHandles(config.requireResults, factoryMap).then(function(handles){
-    const containerMethods = <IContainerInstance> require(pathUtil.join(config.folder, config.file));
+    let containerMethods = require(pathUtil.join(config.folder, config.file));
+    if (containerMethods.default) {
+      containerMethods = containerMethods.default;
+    }
     const container = new ContainerInstance(undefined, handles, containerMethods);
     return container.construct(config).then(function(){
       return container;
@@ -99,8 +100,10 @@ function easyGenerate(
 
 class ContainerHandle implements IContainerHandle {
   public name;
-  constructor(info: IContainerInstanceInfo, ) {
+  public info;
+  constructor(info: IContainerInstanceInfo) {
     this.name = info.name;
+    this.info = info;
   }
   public createConnection(): WebSocket {
     return <WebSocket> new w3cwebsocket(`http://127.0.0.1/${this.name}`);

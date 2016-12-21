@@ -15,7 +15,7 @@ var KeyValueStoreFactory = {
         }
         var instance = new KeyValueStoreInstance(config);
         available.set(config.name, instance);
-        return instance;
+        return Promise.resolve(instance);
     },
     ensureExists: function (info) {
         return Promise.resolve(available.has(info.name));
@@ -38,6 +38,7 @@ var KeyValueStoreFactory = {
 var KeyValueStoreHandle = (function () {
     function KeyValueStoreHandle(info) {
         this.name = info.name;
+        this.info = info;
     }
     KeyValueStoreHandle.prototype.get = function (key) {
         if (!available.has(this.name)) {

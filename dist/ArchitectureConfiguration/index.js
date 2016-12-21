@@ -34,9 +34,7 @@ var ArchitectureConfiguration = (function () {
         if (context.availableServices.has(name)) {
             throw new Error(name + " has already been registered as a service");
         }
-        if ("file" in config) {
-            validate_instance_1.default(config);
-        }
+        validate_instance_1.default(config);
         if (!("require" in config)) {
             context.serviceDependencies.set(name, []);
             context.serviceIsReady.set(name, true);

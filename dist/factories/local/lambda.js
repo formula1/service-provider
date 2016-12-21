@@ -8,7 +8,7 @@ var LambdaFactory = {
             return Promise.reject(new Error("Cannot create two maps of the same name"));
         }
         return this.constructInternal(config).then(function () {
-            return Promise.resolve({ name: config.name });
+            return Promise.resolve({ config: config, args: [], name: config.name });
         });
     },
     constructInternal: function (config) {
@@ -60,6 +60,7 @@ function easyGenerate(config, factoryMap) {
 var LambdaHandle = (function () {
     function LambdaHandle(info) {
         this.name = info.name;
+        this.info = info;
     }
     LambdaHandle.prototype.run = function (input) {
         if (!available.has(this.name)) {

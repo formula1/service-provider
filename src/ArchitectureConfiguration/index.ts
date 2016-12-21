@@ -56,9 +56,7 @@ class ArchitectureConfiguration {
     if (context.availableServices.has(name)) {
       throw new Error(`${name} has already been registered as a service`);
     }
-    if ("file" in config) {
-      validateInstance(<IAbstractServiceConfig> config);
-    }
+    validateInstance(config);
     if (!("require" in config)) {
       context.serviceDependencies.set(name, []);
       context.serviceIsReady.set(name, true);

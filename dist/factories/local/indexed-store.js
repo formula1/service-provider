@@ -14,8 +14,11 @@ var IndexStoreFactory = {
         if (available.has(config.name)) {
             return Promise.reject(new Error("Cannot create two dispatchers of the same name"));
         }
-        this.constructInternal(config).then(function () {
-            return { name: config.name, views: Object.keys(config.views) };
+        if (!("views" in config)) {
+            config.views = {};
+        }
+        return this.constructInternal(config).then(function () {
+            return { config: config, name: config.name, views: Object.keys(config.views), args: [] };
         });
     },
     constructInternal: function (config) {
@@ -23,7 +26,7 @@ var IndexStoreFactory = {
             return Promise.resolve(available.get(config.name));
         }
         var instance = new IndexStoreInstance(config);
-        instance.registerViews().then(function () {
+        return instance.registerViews().then(function () {
             available.set(config.name, instance);
             return instance;
         });

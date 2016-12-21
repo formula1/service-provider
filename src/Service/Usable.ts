@@ -11,6 +11,7 @@ interface IServiceInstanceFactory<ServiceHandle> {
 
 interface IServiceHandle {
   name: string;
+  info: IServiceInstanceInfo;
 }
 
 interface IServiceInstance {

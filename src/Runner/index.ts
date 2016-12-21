@@ -24,30 +24,36 @@ class ServiceRunner {
     if (serviceModule.hasError) {
       return Promise.reject(serviceModule.errorValue);
     }
+    return Promise.resolve(serviceModule.containerInfo);
   }
   private createContainer(config: IServiceConfig): Promise<IServiceInstanceInfo> {
-    if (!this.instanceFactories.has(config.type)) {
-      return Promise.reject(new Error("Type not available for construction"));
+    const { createdServices, instanceFactories } = this;
+    if (!instanceFactories.has(config.type)) {
+      return Promise.reject(new Error(`Type[${config.type}] not available for construction from [${Array.from(this.instanceFactories.keys()).join(", ")}]`));
     }
     return ("require" in config ?
-      Promise.all((<IDependentServiceConfig> config).require.map((req) => {
-        return this.start(req);
-      }))
+      (<IDependentServiceConfig> config).require.reduce((p, req) => {
+        return p.then((configArray) => {
+          return this.start(req).then(function(info){
+            return configArray.concat([ info ]);
+          });
+        });
+      }, Promise.resolve(<Array<IServiceInstanceInfo>> []))
     :
       Promise.resolve([])
     ).then(function(instanceConfigs){
-      const instanceFactory = this.instanceFactories.get(config.type);
+      const instanceFactory = instanceFactories.get(config.type);
       config.requireResults = instanceConfigs;
       return instanceFactory.constructInstance(config);
     }).then(function(containerInfo){
-      this.createdServices.set(config.name, {
+      createdServices.set(config.name, {
         config: config,
         containerInfo: containerInfo,
         hasError: false,
       });
       return containerInfo;
     }, (e) => {
-      this.createdServices.set(config.name, {
+      createdServices.set(config.name, {
         config: config,
         errorValue: e.message || e,
         hasError: true,

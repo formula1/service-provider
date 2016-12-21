@@ -34,15 +34,16 @@ const DEFAULT_VIEWQUERY_CONFIG = {
   skip: 0,
 };
 
-const IndexStoreFactory = <
-  IServiceInstanceFactory<IIndexedStoreHandle<any>>
-> {
+const IndexStoreFactory: IServiceInstanceFactory<IIndexedStoreHandle<any>> = {
   constructInstance(config: IIndexStoreConfig) {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two dispatchers of the same name"));
     }
-    this.constructInternal(config).then(function(){
-      return { name: config.name, views: Object.keys(config.views) };
+    if (!("views" in config)) {
+      config.views = {};
+    }
+    return this.constructInternal(config).then(function(){
+      return { config: config, name: config.name, views: Object.keys(config.views), args: [] };
     });
   },
   constructInternal(config: IIndexStoreConfig) {
@@ -50,7 +51,7 @@ const IndexStoreFactory = <
       return Promise.resolve(available.get(config.name));
     }
     const instance = new IndexStoreInstance(config);
-    instance.registerViews().then(function(){
+    return instance.registerViews().then(function(){
       available.set(config.name, instance);
       return instance;
     });
@@ -79,7 +80,7 @@ const IndexStoreFactory = <
 };
 class IndexStoreHandle<Value> implements IndexStoreHandle<Value> {
   public name;
-  private info: IIndexStoreInstanceInfo;
+  public info: IIndexStoreInstanceInfo;
   constructor(info: IIndexStoreInstanceInfo) {
     this.name = info.name;
     this.info = info;

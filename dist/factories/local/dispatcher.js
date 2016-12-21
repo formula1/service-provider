@@ -82,6 +82,7 @@ var DispatcherInstance = (function () {
 var DispatcherHandle = (function () {
     function DispatcherHandle(info) {
         this.name = info.name;
+        this.info = info;
     }
     DispatcherHandle.prototype.dispatch = function (key, input) {
         if (!available.has(this.name)) {

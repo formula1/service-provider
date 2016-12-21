@@ -12,15 +12,13 @@ interface ILambdaInstanceInfo extends IServiceInstanceInfo {
   name: string;
 }
 
-const LambdaFactory = <
-  IServiceInstanceFactory<ILambdaHandle<any, any>>
-> {
+const LambdaFactory: IServiceInstanceFactory<ILambdaHandle<any, any>> = {
   constructInstance(config: IAbstractServiceConfig & IDependentServiceConfig) {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two maps of the same name"));
     }
     return this.constructInternal(config).then(function(){
-      return Promise.resolve({ name: config.name });
+      return Promise.resolve({ config: config, args: [], name: config.name });
     });
   },
   constructInternal(config) {
@@ -52,10 +50,10 @@ const LambdaFactory = <
 };
 
 class LambdaInstance<Input, Output> implements ILambdaInstance<Input, Output> {
-  public services: Array<IServiceHandle>;
+  public services: Map<string, IServiceHandle>;
   public method: (input: Input) => Promise<Output>;
   public info: IServiceInstanceInfo;
-  constructor(info, serviceHandles: Array<IServiceHandle>, method: (input: Input) => Promise<Output>) {
+  constructor(info, serviceHandles, method: (input: Input) => Promise<Output>) {
     this.info = info;
     this.services = serviceHandles;
     this.method = method;
@@ -81,8 +79,10 @@ function easyGenerate<Input, Output>(
 
 class LambdaHandle<Input, Output> implements ILambdaHandle<Input, Output> {
   public name;
+  public info;
   constructor(info: ILambdaInstanceInfo) {
     this.name = info.name;
+    this.info = info;
   }
   public run(input: Input): Promise<Output> {
     if (!available.has(this.name)) {

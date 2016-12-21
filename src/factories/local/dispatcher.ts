@@ -8,9 +8,7 @@ interface IDispatcherInstanceInfo extends IServiceInstanceInfo {
   name: string;
 }
 
-const DispatcherFactory = <
-  IServiceInstanceFactory<IDispatcherHandle<any>>
-> {
+const DispatcherFactory: IServiceInstanceFactory<IDispatcherHandle<any>> = {
   constructInstance(config: IAbstractServiceConfig & IDependentServiceConfig): Promise<IDispatcherInstanceInfo> {
     if (available.has(config.name)) {
       return Promise.reject(new Error("Cannot create two dispatchers of the same name"));
@@ -95,8 +93,10 @@ class DispatcherInstance implements IDispatcherInstance<any> {
 
 class DispatcherHandle<Input> implements IDispatcherHandle<Input> {
   public name;
+  public info;
   constructor(info: IDispatcherInstanceInfo) {
     this.name = info.name;
+    this.info = info;
   }
   public dispatch(key: string, input: Input): Promise<number> {
     if (!available.has(this.name)) {

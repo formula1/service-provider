@@ -19,27 +19,32 @@ var ServiceRunner = (function () {
     };
     ServiceRunner.prototype.createContainer = function (config) {
         var _this = this;
-        if (!this.instanceFactories.has(config.type)) {
-            return Promise.reject(new Error("Type not available for construction"));
+        var _a = this, createdServices = _a.createdServices, instanceFactories = _a.instanceFactories;
+        if (!instanceFactories.has(config.type)) {
+            return Promise.reject(new Error("Type[" + config.type + "] not available for construction from [" + Array.from(this.instanceFactories.keys()).join(", ") + "]"));
         }
         return ("require" in config ?
-            Promise.all(config.require.map(function (req) {
-                return _this.start(req);
-            }))
+            config.require.reduce(function (p, req) {
+                return p.then(function (configArray) {
+                    return _this.start(req).then(function (info) {
+                        return configArray.concat([info]);
+                    });
+                });
+            }, Promise.resolve([]))
             :
                 Promise.resolve([])).then(function (instanceConfigs) {
-            var instanceFactory = this.instanceFactories.get(config.type);
+            var instanceFactory = instanceFactories.get(config.type);
             config.requireResults = instanceConfigs;
             return instanceFactory.constructInstance(config);
         }).then(function (containerInfo) {
-            this.createdServices.set(config.name, {
+            createdServices.set(config.name, {
                 config: config,
                 containerInfo: containerInfo,
                 hasError: false,
             });
             return containerInfo;
         }, function (e) {
-            _this.createdServices.set(config.name, {
+            createdServices.set(config.name, {
                 config: config,
                 errorValue: e.message || e,
                 hasError: true,
