@@ -5,7 +5,7 @@ var index_1 = require("./index");
 var LambdaFactory = {
     constructInstance: function (config) {
         if (available.has(config.name)) {
-            return Promise.reject(new Error("Cannot create two maps of the same name"));
+            return Promise.reject(new Error("Cannot create two lambdas of the same name " + config.name));
         }
         return this.constructInternal(config).then(function () {
             return Promise.resolve({ config: config, args: [], name: config.name });

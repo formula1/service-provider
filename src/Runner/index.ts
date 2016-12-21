@@ -14,13 +14,10 @@ class ServiceRunner {
     this.createdServices = new Map();
   }
   public start(name): Promise<IServiceInstanceInfo> {
-    return Promise.resolve().then(() => {
-      if (this.createdServices.has(name)) {
-        return this.createdServices.get(name);
-      }
-      if (!this.availableServices.has(name)) {
-        throw new Error(`${name} is not an available service`);
-      }
+    if (!this.availableServices.has(name)) {
+      Promise.reject(new Error(`${name} is not an available service`));
+    }
+    if (!this.createdServices.has(name)) {
       const config = this.availableServices.get(name);
       this.createContainer(config).then(
         this.finishPending.bind(this, name, false),
@@ -31,16 +28,15 @@ class ServiceRunner {
         state: "pending",
         pending: [],
       });
-      return this.createdServices.get(name);
-    }).then(function(serviceModule: IServiceHandleInit): Promise<IServiceInstanceInfo> {
-      return new Promise(function(res, rej){
-        switch (serviceModule.state) {
-          case "error" : return rej(serviceModule.error);
-          case "ready" : return res(serviceModule.value);
-          case "pending" : serviceModule.pending.push([res, rej]);
-          default : rej("non-existant type");
-        }
-      });
+    }
+    const serviceModule = this.createdServices.get(name);
+    return new Promise(function(res, rej){
+      switch (serviceModule.state) {
+        case "error" : return rej(serviceModule.error);
+        case "ready" : return res(serviceModule.value);
+        case "pending" : return serviceModule.pending.push([res, rej]);
+        default : rej("non-existant type");
+      }
     });
   }
   private createContainer(config: IServiceConfig): Promise<IServiceInstanceInfo> {

@@ -6,31 +6,26 @@ var ServiceRunner = (function () {
         this.createdServices = new Map();
     }
     ServiceRunner.prototype.start = function (name) {
-        var _this = this;
-        return Promise.resolve().then(function () {
-            if (_this.createdServices.has(name)) {
-                return _this.createdServices.get(name);
-            }
-            if (!_this.availableServices.has(name)) {
-                throw new Error(name + " is not an available service");
-            }
-            var config = _this.availableServices.get(name);
-            _this.createContainer(config).then(_this.finishPending.bind(_this, name, false), _this.finishPending.bind(_this, name, true));
-            _this.createdServices.set(name, {
+        if (!this.availableServices.has(name)) {
+            Promise.reject(new Error(name + " is not an available service"));
+        }
+        if (!this.createdServices.has(name)) {
+            var config = this.availableServices.get(name);
+            this.createContainer(config).then(this.finishPending.bind(this, name, false), this.finishPending.bind(this, name, true));
+            this.createdServices.set(name, {
                 config: config,
                 state: "pending",
                 pending: [],
             });
-            return _this.createdServices.get(name);
-        }).then(function (serviceModule) {
-            return new Promise(function (res, rej) {
-                switch (serviceModule.state) {
-                    case "error": return rej(serviceModule.error);
-                    case "ready": return res(serviceModule.value);
-                    case "pending": serviceModule.pending.push([res, rej]);
-                    default: rej("non-existant type");
-                }
-            });
+        }
+        var serviceModule = this.createdServices.get(name);
+        return new Promise(function (res, rej) {
+            switch (serviceModule.state) {
+                case "error": return rej(serviceModule.error);
+                case "ready": return res(serviceModule.value);
+                case "pending": return serviceModule.pending.push([res, rej]);
+                default: rej("non-existant type");
+            }
         });
     };
     ServiceRunner.prototype.createContainer = function (config) {
