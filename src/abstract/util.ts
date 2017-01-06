@@ -20,4 +20,9 @@ function generateHandles(
   });
 }
 
-export { generateHandles };
+function resolveModule(location){
+  let ret = require(location);
+  return ret.default || ret;
+};
+
+export { generateHandles, resolveModule };

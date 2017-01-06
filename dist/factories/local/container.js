@@ -1,5 +1,6 @@
 "use strict";
 var pathUtil = require("path");
+var util_1 = require("../../abstract/util");
 var index_1 = require("./index");
 var websocket_1 = require("websocket");
 var available = new Map();
@@ -62,10 +63,10 @@ var ContainerInstance = (function () {
     };
     return ContainerInstance;
 }());
-var util_1 = require("../../abstract/util");
+var util_2 = require("../../abstract/util");
 function easyGenerate(config, factoryMap) {
-    return util_1.generateHandles(config.requireResults, factoryMap).then(function (handles) {
-        var containerMethods = require(pathUtil.join(config.folder, config.file));
+    return util_2.generateHandles(config.requireResults, factoryMap).then(function (handles) {
+        var containerMethods = util_1.resolveModule(pathUtil.join(config.folder, config.file));
         if (containerMethods.default) {
             containerMethods = containerMethods.default;
         }

@@ -15,3 +15,9 @@ function generateHandles(handleConfigs, instanceFactories) {
     });
 }
 exports.generateHandles = generateHandles;
+function resolveModule(location) {
+    var ret = require(location);
+    return ret.default || ret;
+}
+exports.resolveModule = resolveModule;
+;

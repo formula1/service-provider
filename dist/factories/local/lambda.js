@@ -1,5 +1,6 @@
 "use strict";
 var pathUtil = require("path");
+var util_1 = require("../../abstract/util");
 var available = new Map();
 var index_1 = require("./index");
 var LambdaFactory = {
@@ -49,10 +50,10 @@ var LambdaInstance = (function () {
     };
     return LambdaInstance;
 }());
-var util_1 = require("../../abstract/util");
+var util_2 = require("../../abstract/util");
 function easyGenerate(config, factoryMap) {
-    return util_1.generateHandles(config.requireResults, factoryMap).then(function (handles) {
-        var containerMethod = require(pathUtil.join(config.folder, config.file));
+    return util_2.generateHandles(config.requireResults, factoryMap).then(function (handles) {
+        var containerMethod = util_1.resolveModule(pathUtil.join(config.folder, config.file));
         var container = new LambdaInstance(undefined, handles, containerMethod);
         return container;
     });

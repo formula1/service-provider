@@ -196,10 +196,12 @@ class IndexStoreInstance<Value> implements IIndexedStoreInstance<Value> {
     const bucket = this.bucket;
     return new Promise(function(res, rej){
       bucket.query(vq, function(err, docs){
-        if (err) {
-          rej(err);
-        } else {
-          res(docs);
+        if (!err) {
+          return res(docs);
+        }
+        switch(err.code) {
+          case 13: return res([]);
+          default: return rej(err);
         }
       });
     });

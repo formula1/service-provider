@@ -170,11 +170,12 @@ var IndexStoreInstance = (function () {
         var bucket = this.bucket;
         return new Promise(function (res, rej) {
             bucket.query(vq, function (err, docs) {
-                if (err) {
-                    rej(err);
+                if (!err) {
+                    return res(docs);
                 }
-                else {
-                    res(docs);
+                switch (err.code) {
+                    case 13: return res([]);
+                    default: return rej(err);
                 }
             });
         });
